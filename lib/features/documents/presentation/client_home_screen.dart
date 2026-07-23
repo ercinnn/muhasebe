@@ -7,6 +7,7 @@ import '../../../services/notifications/notification_providers.dart';
 import '../../../services/push/fcm_service.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../settings/presentation/settings_screen.dart';
+import '../application/inbox_summary.dart';
 import '../data/documents_repository.dart';
 import 'client/calendar_screen.dart';
 import 'client/info_screen.dart';
@@ -71,6 +72,8 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final unreadCount = ref.watch(inboxSummaryProvider).unreadCount;
+
     return AdaptiveScaffold(
       destinations: _destinations,
       selectedIndex: _index,
@@ -78,6 +81,14 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       appBar: AppBar(
         title: Text(_titles[_index]),
         actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Badge(
+              isLabelVisible: unreadCount > 0,
+              label: Text('$unreadCount'),
+              child: const Icon(Icons.mail_outline),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Çıkış Yap',

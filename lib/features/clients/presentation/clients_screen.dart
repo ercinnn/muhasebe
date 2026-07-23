@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/breakpoints.dart';
 import '../data/clients_repository.dart';
+import '../domain/client.dart';
 import '../domain/invite.dart';
 
 class ClientsScreen extends ConsumerWidget {
@@ -91,41 +93,101 @@ class ClientsScreen extends ConsumerWidget {
                 if (clients.isEmpty && pendingInvites.isEmpty) {
                   return const Center(child: Text('Henüz mükellef eklenmedi'));
                 }
-                return ListView(
-                  children: [
-                    for (final client in clients)
-                      Card(
-                        child: ListTile(
-                          leading: const CircleAvatar(child: Icon(Icons.business)),
-                          title: Text(client.fullName),
-                          subtitle: const Text('Aktif mükellef'),
-                        ),
-                      ),
-                    if (pendingInvites.isNotEmpty) ...[
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Text('Bekleyen Davetler', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      for (final invite in pendingInvites)
-                        Card(
-                          child: ListTile(
-                            leading: const CircleAvatar(child: Icon(Icons.hourglass_empty)),
-                            title: Text(invite.clientName),
-                            subtitle: Text('Kod: ${invite.code}'),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.copy),
-                              onPressed: () => Clipboard.setData(ClipboardData(text: invite.code)),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ],
-                );
+                final isWide = MediaQuery.sizeOf(context).width >= Breakpoints.rail;
+                return isWide
+                    ? _ClientsTable(clients: clients, pendingInvites: pendingInvites)
+                    : _ClientsList(clients: clients, pendingInvites: pendingInvites);
               },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stackTrace) => Center(child: Text('Hata: $error')),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ClientsList extends StatelessWidget {
+  const _ClientsList({required this.clients, required this.pendingInvites});
+
+  final List<Client> clients;
+  final List<Invite> pendingInvites;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        for (final client in clients)
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.business)),
+              title: Text(client.fullName),
+              subtitle: const Text('Aktif mükellef'),
+            ),
+          ),
+        if (pendingInvites.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text('Bekleyen Davetler', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          for (final invite in pendingInvites)
+            Card(
+              child: ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.hourglass_empty)),
+                title: Text(invite.clientName),
+                subtitle: Text('Kod: ${invite.code}'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.copy),
+                  onPressed: () => Clipboard.setData(ClipboardData(text: invite.code)),
+                ),
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Web table view for wide viewports, per spec.
+class _ClientsTable extends StatelessWidget {
+  const _ClientsTable({required this.clients, required this.pendingInvites});
+
+  final List<Client> clients;
+  final List<Invite> pendingInvites;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('Ad Soyad / Unvan')),
+          DataColumn(label: Text('Durum')),
+          DataColumn(label: Text('')),
+        ],
+        rows: [
+          for (final client in clients)
+            DataRow(
+              cells: [
+                DataCell(Text(client.fullName)),
+                const DataCell(Text('Aktif mükellef')),
+                const DataCell(SizedBox.shrink()),
+              ],
+            ),
+          for (final invite in pendingInvites)
+            DataRow(
+              cells: [
+                DataCell(Text(invite.clientName)),
+                DataCell(Text('Bekliyor — Kod: ${invite.code}')),
+                DataCell(
+                  IconButton(
+                    icon: const Icon(Icons.copy),
+                    tooltip: 'Kodu kopyala',
+                    onPressed: () => Clipboard.setData(ClipboardData(text: invite.code)),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
