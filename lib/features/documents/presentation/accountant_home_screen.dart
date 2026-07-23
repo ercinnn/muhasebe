@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/adaptive_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../clients/presentation/clients_screen.dart';
 import '../../upload/presentation/upload_screen.dart';
+import 'accountant/sent_documents_screen.dart';
 
-/// Shell for the accountant role. "Belge Yükle" is wired to the real
-/// upload flow (Faz 4); "Mükelleflerim" / "Gönderilenler" are still
-/// placeholders, built out in Faz 5.
+/// Shell for the accountant role: Mükelleflerim / Belge Yükle / Gönderilenler.
 class AccountantHomeScreen extends ConsumerStatefulWidget {
   const AccountantHomeScreen({super.key});
 
@@ -28,30 +28,24 @@ class _AccountantHomeScreenState extends ConsumerState<AccountantHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authControllerProvider).value;
-
     return AdaptiveScaffold(
       destinations: _destinations,
       selectedIndex: _index,
       onDestinationSelected: (i) => setState(() => _index = i),
-      appBar: AppBar(title: Text(_titles[_index])),
-      body: switch (_index) {
-        1 => const UploadScreen(),
-        _ => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Hoş geldiniz, ${user?.fullName ?? ''}'),
-              const SizedBox(height: 8),
-              const Text('Bu sekme Faz 5\'te tamamlanacak'),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
-                child: const Text('Çıkış Yap'),
-              ),
-            ],
+      appBar: AppBar(
+        title: Text(_titles[_index]),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Çıkış Yap',
+            onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
           ),
-        ),
+        ],
+      ),
+      body: switch (_index) {
+        0 => const ClientsScreen(),
+        1 => const UploadScreen(),
+        _ => const SentDocumentsScreen(),
       },
     );
   }

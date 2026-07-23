@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/adaptive_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
+import 'client/calendar_screen.dart';
+import 'client/info_screen.dart';
+import 'client/payments_screen.dart';
 
-/// Placeholder shell for the client role. Real tab content
-/// (Ödemeler / Takvim / Bilgilendirme) lands in Faz 5.
+/// Shell for the client role: Ödemeler / Takvim / Bilgilendirme.
 class ClientHomeScreen extends ConsumerStatefulWidget {
   const ClientHomeScreen({super.key});
 
@@ -26,28 +28,25 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authControllerProvider).value;
-
     return AdaptiveScaffold(
       destinations: _destinations,
       selectedIndex: _index,
       onDestinationSelected: (i) => setState(() => _index = i),
-      appBar: AppBar(title: Text(_titles[_index])),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Hoş geldiniz, ${user?.fullName ?? ''}'),
-            const SizedBox(height: 8),
-            const Text('Mükellef paneli (yakında)'),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
-              child: const Text('Çıkış Yap'),
-            ),
-          ],
-        ),
+      appBar: AppBar(
+        title: Text(_titles[_index]),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Çıkış Yap',
+            onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+          ),
+        ],
       ),
+      body: switch (_index) {
+        0 => const PaymentsScreen(),
+        1 => const CalendarScreen(),
+        _ => const InfoScreen(),
+      },
     );
   }
 }

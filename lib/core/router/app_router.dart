@@ -6,6 +6,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
 import '../../features/documents/presentation/accountant_home_screen.dart';
 import '../../features/documents/presentation/client_home_screen.dart';
+import '../../features/documents/presentation/document_detail_screen.dart';
 import '../constants/document_enums.dart';
 import 'riverpod_refresh_listenable.dart';
 
@@ -42,6 +43,11 @@ GoRouter appRouter(Ref ref) {
       GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
       GoRoute(path: '/accountant', builder: (context, state) => const AccountantHomeScreen()),
       GoRoute(path: '/client', builder: (context, state) => const ClientHomeScreen()),
+      GoRoute(
+        path: '/document/:id',
+        builder: (context, state) =>
+            DocumentDetailScreen(documentId: state.pathParameters['id']!),
+      ),
     ],
   );
 }

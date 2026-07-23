@@ -1,0 +1,133 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../data/clients_repository.dart';
+import '../domain/invite.dart';
+
+class ClientsScreen extends ConsumerWidget {
+  const ClientsScreen({super.key});
+
+  Future<void> _showCreateInviteDialog(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController();
+    final clientName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Davet Kodu Oluştur'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Mükellef Adı / Unvanı'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal')),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Oluştur'),
+          ),
+        ],
+      ),
+    );
+    if (clientName == null || clientName.isEmpty) return;
+
+    try {
+      final invite = await ref
+          .read(clientsRepositoryProvider)
+          .createInvite(clientName: clientName);
+      ref.invalidate(myInvitesProvider);
+      if (context.mounted) await _showInviteCodeDialog(context, invite);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Davet oluşturulamadı: $e')));
+      }
+    }
+  }
+
+  Future<void> _showInviteCodeDialog(BuildContext context, Invite invite) {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${invite.clientName} için davet kodu'),
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(invite.code, style: Theme.of(context).textTheme.headlineSmall),
+            IconButton(
+              icon: const Icon(Icons.copy),
+              tooltip: 'Kopyala',
+              onPressed: () => Clipboard.setData(ClipboardData(text: invite.code)),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Kapat')),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final clientsAsync = ref.watch(myClientsProvider);
+    final invitesAsync = ref.watch(myInvitesProvider);
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FilledButton.icon(
+            onPressed: () => _showCreateInviteDialog(context, ref),
+            icon: const Icon(Icons.add),
+            label: const Text('Davet Kodu Oluştur'),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: clientsAsync.when(
+              data: (clients) {
+                final pendingInvites = invitesAsync.value ?? [];
+                if (clients.isEmpty && pendingInvites.isEmpty) {
+                  return const Center(child: Text('Henüz mükellef eklenmedi'));
+                }
+                return ListView(
+                  children: [
+                    for (final client in clients)
+                      Card(
+                        child: ListTile(
+                          leading: const CircleAvatar(child: Icon(Icons.business)),
+                          title: Text(client.fullName),
+                          subtitle: const Text('Aktif mükellef'),
+                        ),
+                      ),
+                    if (pendingInvites.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Text('Bekleyen Davetler', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      for (final invite in pendingInvites)
+                        Card(
+                          child: ListTile(
+                            leading: const CircleAvatar(child: Icon(Icons.hourglass_empty)),
+                            title: Text(invite.clientName),
+                            subtitle: Text('Kod: ${invite.code}'),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.copy),
+                              onPressed: () => Clipboard.setData(ClipboardData(text: invite.code)),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stackTrace) => Center(child: Text('Hata: $error')),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

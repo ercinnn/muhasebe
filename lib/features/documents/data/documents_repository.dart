@@ -83,16 +83,56 @@ class DocumentsRepository {
     return DocumentStatus.pending;
   }
 
-  Future<List<DocumentRecord>> fetchSentByAccountant(String accountantId) async {
-    final rows = await _client
-        .from('documents')
-        .select()
-        .eq('accountant_id', accountantId)
-        .order('created_at', ascending: false);
-    return rows.map(DocumentRecord.fromMap).toList();
+  Future<void> markPaid(String documentId) =>
+      _client.rpc('mark_document_paid', params: {'p_document_id': documentId});
+
+  Future<void> markSeen(String documentId) =>
+      _client.rpc('mark_document_seen', params: {'p_document_id': documentId});
+
+  Future<String> createSignedUrl(String storagePath, {int expiresInSeconds = 3600}) =>
+      _client.storage.from('documents').createSignedUrl(storagePath, expiresInSeconds);
+
+  Future<DocumentRecord?> fetchById(String id) async {
+    final row = await _client.from('documents').select().eq('id', id).maybeSingle();
+    return row == null ? null : DocumentRecord.fromMap(row);
   }
+
+  /// Realtime-backed stream of a client's own documents (RLS already scopes
+  /// this to `client_id = auth.uid()`).
+  Stream<List<DocumentRecord>> streamForClient(String clientId) => _client
+      .from('documents')
+      .stream(primaryKey: ['id'])
+      .eq('client_id', clientId)
+      .order('due_date')
+      .map((rows) => rows.map(DocumentRecord.fromMap).toList());
+
+  /// Realtime-backed stream of documents an accountant has sent.
+  Stream<List<DocumentRecord>> streamForAccountant(String accountantId) => _client
+      .from('documents')
+      .stream(primaryKey: ['id'])
+      .eq('accountant_id', accountantId)
+      .order('created_at', ascending: false)
+      .map((rows) => rows.map(DocumentRecord.fromMap).toList());
 }
 
 @riverpod
 DocumentsRepository documentsRepository(Ref ref) =>
     DocumentsRepository(ref.watch(supabaseClientProvider));
+
+@riverpod
+Stream<List<DocumentRecord>> clientDocuments(Ref ref) {
+  final userId = ref.watch(supabaseClientProvider).auth.currentUser?.id;
+  if (userId == null) return const Stream.empty();
+  return ref.watch(documentsRepositoryProvider).streamForClient(userId);
+}
+
+@riverpod
+Stream<List<DocumentRecord>> accountantDocuments(Ref ref) {
+  final userId = ref.watch(supabaseClientProvider).auth.currentUser?.id;
+  if (userId == null) return const Stream.empty();
+  return ref.watch(documentsRepositoryProvider).streamForAccountant(userId);
+}
+
+@riverpod
+Future<DocumentRecord?> documentById(Ref ref, String id) =>
+    ref.watch(documentsRepositoryProvider).fetchById(id);
