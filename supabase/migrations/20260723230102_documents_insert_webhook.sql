@@ -5,7 +5,7 @@
 --
 -- Requires two secrets in Supabase Vault before this actually fires
 -- anything (silently no-ops until then — see README below):
---   select vault.create_secret('https://<project-ref>.functions.supabase.co/on-document-insert', 'edge_function_url');
+--   select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/on-document-insert', 'edge_function_url');
 --   select vault.create_secret('<a random shared secret>', 'webhook_secret');
 -- The same webhook_secret value must be set as the Edge Function's
 -- WEBHOOK_SECRET secret (`supabase secrets set WEBHOOK_SECRET=...`).
