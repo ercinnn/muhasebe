@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# dart-define-from-file secrets (Supabase URL/anon key, Firebase config)
+/env/*.json
+!/env/dev.example.json
+
+# Firebase generated config (contains project-specific IDs; regenerate via flutterfire configure)
+lib/firebase_options.dart
