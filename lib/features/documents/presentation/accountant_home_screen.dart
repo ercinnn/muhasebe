@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/adaptive_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../upload/presentation/upload_screen.dart';
 
-/// Placeholder shell for the accountant role. Real tab content
-/// (Mükelleflerim / Belge Yükle / Gönderilenler) lands in Faz 4-5.
+/// Shell for the accountant role. "Belge Yükle" is wired to the real
+/// upload flow (Faz 4); "Mükelleflerim" / "Gönderilenler" are still
+/// placeholders, built out in Faz 5.
 class AccountantHomeScreen extends ConsumerStatefulWidget {
   const AccountantHomeScreen({super.key});
 
@@ -33,21 +35,24 @@ class _AccountantHomeScreenState extends ConsumerState<AccountantHomeScreen> {
       selectedIndex: _index,
       onDestinationSelected: (i) => setState(() => _index = i),
       appBar: AppBar(title: Text(_titles[_index])),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Hoş geldiniz, ${user?.fullName ?? ''}'),
-            const SizedBox(height: 8),
-            const Text('Muhasebeci paneli (yakında)'),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
-              child: const Text('Çıkış Yap'),
-            ),
-          ],
+      body: switch (_index) {
+        1 => const UploadScreen(),
+        _ => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Hoş geldiniz, ${user?.fullName ?? ''}'),
+              const SizedBox(height: 8),
+              const Text('Bu sekme Faz 5\'te tamamlanacak'),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+                child: const Text('Çıkış Yap'),
+              ),
+            ],
+          ),
         ),
-      ),
+      },
     );
   }
 }

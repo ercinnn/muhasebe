@@ -10,6 +10,12 @@ enum DocumentCategory {
 
   static DocumentCategory fromDb(String value) =>
       values.firstWhere((e) => e.dbValue == value);
+
+  String get label => switch (this) {
+    DocumentCategory.payment => 'Ödeme',
+    DocumentCategory.info => 'Bilgilendirme',
+    DocumentCategory.unclassified => 'Sınıflandırılamadı',
+  };
 }
 
 /// Mirrors the `documents.doc_type` check constraint.
@@ -29,6 +35,18 @@ enum DocType {
 
   static DocType fromDb(String value) =>
       values.firstWhere((e) => e.dbValue == value);
+
+  String get label => switch (this) {
+    DocType.kdv => 'KDV',
+    DocType.muhtasar => 'Muhtasar',
+    DocType.kdv2 => 'KDV Tevkifatı',
+    DocType.geciciVergi => 'Geçici Vergi',
+    DocType.damga => 'Damga Vergisi',
+    DocType.sgkPrim => 'SGK Prim',
+    DocType.iseGiris => 'İşe Giriş Bildirgesi',
+    DocType.istenCikis => 'İşten Ayrılış Bildirgesi',
+    DocType.other => 'Diğer',
+  };
 }
 
 /// Mirrors the `documents.status` check constraint.
@@ -43,6 +61,13 @@ enum DocumentStatus {
 
   static DocumentStatus fromDb(String value) =>
       values.firstWhere((e) => e.dbValue == value);
+
+  String get label => switch (this) {
+    DocumentStatus.pending => 'Bekliyor',
+    DocumentStatus.paid => 'Ödendi',
+    DocumentStatus.noPayment => 'Ödeme gerekmez',
+    DocumentStatus.info => 'Bilgilendirme',
+  };
 }
 
 /// Mirrors the `profiles.role` check constraint.

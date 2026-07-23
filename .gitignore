@@ -50,3 +50,6 @@ app.*.map.json
 
 # Firebase generated config (contains project-specific IDs; regenerate via flutterfire configure)
 lib/firebase_options.dart
+
+# Claude Code harness runtime state
+.claude/scheduled_tasks.lock
