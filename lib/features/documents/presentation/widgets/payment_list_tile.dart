@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/document_enums.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../data/documents_repository.dart';
+import '../../application/document_actions.dart';
 import '../../domain/document_record.dart';
 import 'due_status.dart';
 
@@ -43,7 +43,7 @@ class PaymentListTile extends ConsumerWidget {
         trailing: canMarkPaid
             ? FilledButton.tonal(
                 onPressed: () async {
-                  await ref.read(documentsRepositoryProvider).markPaid(document.id);
+                  await ref.read(documentActionsProvider.notifier).markPaid(document.id);
                 },
                 child: const Text('Ödendi'),
               )

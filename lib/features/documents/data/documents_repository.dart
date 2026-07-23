@@ -113,6 +113,14 @@ class DocumentsRepository {
       .eq('accountant_id', accountantId)
       .order('created_at', ascending: false)
       .map((rows) => rows.map(DocumentRecord.fromMap).toList());
+
+  /// One-shot fetch (not a realtime stream) used for the mobile app's
+  /// resync-on-launch: rebuild local reminder alarms from the current
+  /// server state in case a push was missed.
+  Future<List<DocumentRecord>> fetchForClient(String clientId) async {
+    final rows = await _client.from('documents').select().eq('client_id', clientId);
+    return rows.map(DocumentRecord.fromMap).toList();
+  }
 }
 
 @riverpod

@@ -5,6 +5,7 @@ import 'package:pdfrx/pdfrx.dart';
 import '../../../core/constants/document_enums.dart';
 import '../../../core/utils/formatters.dart';
 import '../../auth/application/auth_controller.dart';
+import '../application/document_actions.dart';
 import '../data/documents_repository.dart';
 import '../domain/document_record.dart';
 
@@ -106,7 +107,7 @@ class _FieldsPanel extends ConsumerWidget {
           const SizedBox(height: 16),
           FilledButton(
             onPressed: () async {
-              await ref.read(documentsRepositoryProvider).markPaid(document.id);
+              await ref.read(documentActionsProvider.notifier).markPaid(document.id);
             },
             child: const Text('Ödendi olarak işaretle'),
           ),
