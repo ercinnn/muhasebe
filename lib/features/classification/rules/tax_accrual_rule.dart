@@ -31,13 +31,13 @@ class TaxAccrualRule implements ClassificationRule {
     final docType = taxTypeLabel == null ? DocType.other : _taxTypeToDocType[taxTypeLabel]!;
 
     final personName = combineName(
-      extractLabelValue(rawText, 'ADI'),
-      extractLabelValue(rawText, 'SOYADI (UNVANI)'),
+      extractLineStartValue(rawText, 'ADI'),
+      extractLineStartValue(rawText, 'SOYADI (UNVANI)'),
     );
-    final period = extractLabelValue(rawText, 'Vergilendirme Dönemi');
+    final period = extractTaxPeriod(rawText);
     final amount = extractAmountFromLabelLine(rawText, 'TOPLAM');
-    final dueDate = extractEarliestDateForLabel(rawText, 'Vadesi');
-    final fisNo = extractLabelValue(rawText, 'Fiş No');
+    final dueDate = extractEarliestRowDueDate(rawText);
+    final fisNo = extractFisNo(rawText);
 
     return ExtractedDocument(
       category: DocumentCategory.payment,

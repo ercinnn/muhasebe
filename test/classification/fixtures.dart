@@ -1,112 +1,206 @@
-/// Synthetic fixture texts modeling the layout described in the
-/// classification spec. These are hand-built approximations (not copies of
-/// any real government document) meant to exercise the regex/label
-/// extraction rules; adjust once real sample PDFs are available in Faz 4.
+/// Fixture texts modeling the layout of a real GİB tahakkuk fişi PDF as
+/// extracted by pdfrx (see a sample in `009281_..._THK.pdf`): labels and
+/// values are NOT colon-separated, and the reading order is jumbled by the
+/// PDF's underlying text stream rather than the visual table layout — e.g.
+/// "Vergilendirme Dönemi" is a column header with its value ("MM/YYYY-
+/// MM/YYYY") printed several lines below/after it, and there is no "Fiş No"
+/// label at all (the receipt number is the barcode's alphanumeric caption).
 library;
 
 const kdvTaxAccrualText = '''
-T.C.
-HAZİNE VE MALİYE BAKANLIĞI
-GELİR İDARESİ BAŞKANLIĞI
-MERKEZ VERGİ DAİRESİ MÜDÜRLÜĞÜ
 TAHAKKUK FİŞİ
-
-SOYADI (UNVANI): YILMAZ TİCARET LTD. ŞTİ.
-ADI: -
-Vergilendirme Dönemi: 05/2026-05/2026
-
-Ana Vergi Kodu: 0015
-Vergi Adı: GERÇEK USULDE KATMA DEĞER VERGİSİ
-Tahakkuk Eden: 1.939,70
-Vadesi: 26/06/2026
-
-TOPLAM                                                       1.939,70
-
-Fiş No: 2026072201Y7m0000088
+T.C
+HAZİNE VE MALİYE BAKANLIĞI
+İSTANBUL
+VERGİ KİMLİK NUMARASI 1234567890 ( T.C. Kimlik No )
+SOYADI (UNVANI) YILMAZ TİCARET LTD. ŞTİ.
+ADI -
+Kabul Tarihi Vergilendirme Dönemi Düzenleme
+Tarihi
+Ana Vergi Kodu 0015
+GERÇEK USULDE KATMA DEĞER VERGİSİ
+22/06/2026 05/2026-05/2026 22/06/2026
+MAKİNA NO
+KADIKÖY
+SIRA NO
+ADRES
+BAĞDAT CAD.
+Kapı No:1 Daire No:2 Tel:
+ KADIKÖY İSTANBUL
+2026072201Y7m0000088
+VADESİ ÖDENECEK
+OLAN
+MAHSUP
+EDİLEN
+TAHAKKUK
+EDEN
+ORAN
+TÜRÜ MATRAH
+0015 KDV1 10.000,00 1.939,70 0,00 1.939,70 26/06/2026
+TOPLAM 1.939,70
+İşlem Türü 0010
+Thk Türü 9000
+YALNIZ BİN DOKUZYÜZOTUZDOKUZ TL YETMİŞ Kr .dir
+009281 VERGİ DAİRESİ MÜDÜRLÜĞÜ
+2200610719
+İLİ DEFTERDARLIĞI
 ''';
 
 const mahsupTaxAccrualText = '''
-T.C.
-HAZİNE VE MALİYE BAKANLIĞI
-GELİR İDARESİ BAŞKANLIĞI
-MERKEZ VERGİ DAİRESİ MÜDÜRLÜĞÜ
 TAHAKKUK FİŞİ
-
-SOYADI (UNVANI): DEMIR YAPI A.Ş.
-ADI: -
-Vergilendirme Dönemi: 06/2026-06/2026
-
-Ana Vergi Kodu: 0015
-Vergi Adı: GERÇEK USULDE KATMA DEĞER VERGİSİ
-Tahakkuk Eden: 3.500,00
-Mahsup Edilen: 3.500,00
-Vadesi: 26/07/2026
-
-TOPLAM                                                       0,00
-
-Fiş No: 2026080101Y7m0000099
+T.C
+HAZİNE VE MALİYE BAKANLIĞI
+İSTANBUL
+VERGİ KİMLİK NUMARASI 9876543210 ( T.C. Kimlik No )
+SOYADI (UNVANI) DEMIR YAPI A.Ş.
+ADI -
+Kabul Tarihi Vergilendirme Dönemi Düzenleme
+Tarihi
+Ana Vergi Kodu 0015
+GERÇEK USULDE KATMA DEĞER VERGİSİ
+22/07/2026 06/2026-06/2026 22/07/2026
+MAKİNA NO
+KADIKÖY
+SIRA NO
+ADRES
+BAĞDAT CAD.
+Kapı No:1 Daire No:2 Tel:
+ KADIKÖY İSTANBUL
+2026080101Y7m0000099
+VADESİ ÖDENECEK
+OLAN
+MAHSUP
+EDİLEN
+TAHAKKUK
+EDEN
+ORAN
+TÜRÜ MATRAH
+0015 KDV1 10.000,00 0,00 3.500,00 3.500,00 26/07/2026
+TOPLAM 0,00
+İşlem Türü 0010
+Thk Türü 9000
+YALNIZ SIFIR TL .dir
+009281 VERGİ DAİRESİ MÜDÜRLÜĞÜ
+2200610719
+İLİ DEFTERDARLIĞI
 ''';
 
 const missingToplamTaxAccrualText = '''
-T.C.
-HAZİNE VE MALİYE BAKANLIĞI
-GELİR İDARESİ BAŞKANLIĞI
 TAHAKKUK FİŞİ
-
-SOYADI (UNVANI): KAYA İNŞAAT LTD. ŞTİ.
-ADI: -
-Vergilendirme Dönemi: 04/2026-04/2026
-
-Ana Vergi Kodu: 0003
-Vergi Adı: GELİR VERGİSİ S. (MUHTASAR)
-Vadesi: 26/05/2026
-
-Fiş No: 2026060101Y7m0000012
+T.C
+HAZİNE VE MALİYE BAKANLIĞI
+İSTANBUL
+VERGİ KİMLİK NUMARASI 1122334455 ( T.C. Kimlik No )
+SOYADI (UNVANI) KAYA İNŞAAT LTD. ŞTİ.
+ADI -
+Kabul Tarihi Vergilendirme Dönemi Düzenleme
+Tarihi
+Ana Vergi Kodu 0003
+GELİR VERGİSİ S. (MUHTASAR)
+22/05/2026 04/2026-04/2026 22/05/2026
+MAKİNA NO
+KADIKÖY
+SIRA NO
+ADRES
+BAĞDAT CAD.
+Kapı No:1 Daire No:2 Tel:
+ KADIKÖY İSTANBUL
+2026060101Y7m0000012
+VADESİ ÖDENECEK
+OLAN
+MAHSUP
+EDİLEN
+TAHAKKUK
+EDEN
+ORAN
+TÜRÜ MATRAH
+0003 STPJ 5.000,00 500,00 0,00 500,00 26/05/2026
+İşlem Türü 0010
+Thk Türü 9000
+009281 VERGİ DAİRESİ MÜDÜRLÜĞÜ
+2200610719
+İLİ DEFTERDARLIĞI
 ''';
 
 const multiRowTaxAccrualText = '''
-T.C.
-HAZİNE VE MALİYE BAKANLIĞI
-GELİR İDARESİ BAŞKANLIĞI
 TAHAKKUK FİŞİ
-
-SOYADI (UNVANI): OZTURK GIDA A.Ş.
-ADI: -
-Vergilendirme Dönemi: 07/2026-07/2026
-
-Ana Vergi Kodu: 9022
-Vergi Adı: KATMA DEĞER VERGİSİ TEVKİFATI
-Tahakkuk Eden: 850,25
-Vadesi: 26/08/2026
-
-Ana Vergi Kodu: 0091
-Vergi Adı: DAMGA VERGİSİ
-Tahakkuk Eden: 120,00
-Vadesi: 20/08/2026
-
-TOPLAM                                                          970,25
-
-Fiş No: 2026090101Y7m0000034
+T.C
+HAZİNE VE MALİYE BAKANLIĞI
+İSTANBUL
+VERGİ KİMLİK NUMARASI 6677889900 ( T.C. Kimlik No )
+SOYADI (UNVANI) OZTURK GIDA A.Ş.
+ADI -
+Kabul Tarihi Vergilendirme Dönemi Düzenleme
+Tarihi
+Ana Vergi Kodu 9022
+KATMA DEĞER VERGİSİ TEVKİFATI
+Ana Vergi Kodu 0091
+DAMGA VERGİSİ
+26/09/2026 07/2026-07/2026 26/09/2026
+MAKİNA NO
+KADIKÖY
+SIRA NO
+ADRES
+BAĞDAT CAD.
+Kapı No:1 Daire No:2 Tel:
+ KADIKÖY İSTANBUL
+2026090101Y7m0000034
+VADESİ ÖDENECEK
+OLAN
+MAHSUP
+EDİLEN
+TAHAKKUK
+EDEN
+ORAN
+TÜRÜ MATRAH
+9022 STPJ 5.000,00 850,25 0,00 850,25 26/08/2026
+0091 DMG 1.200,00 120,00 0,00 120,00 20/08/2026
+TOPLAM 970,25
+İşlem Türü 0010
+Thk Türü 9000
+YALNIZ DOKUZYÜZYETMİŞ TL YİRMİBEŞ Kr .dir
+009281 VERGİ DAİRESİ MÜDÜRLÜĞÜ
+2200610719
+İLİ DEFTERDARLIĞI
 ''';
 
 const geciciVergiTaxAccrualText = '''
-T.C.
-HAZİNE VE MALİYE BAKANLIĞI
-GELİR İDARESİ BAŞKANLIĞI
 TAHAKKUK FİŞİ
-
-SOYADI (UNVANI): AK PLASTİK SAN. TİC. LTD. ŞTİ.
-ADI: -
-Vergilendirme Dönemi: 01/2026-03/2026
-
-Ana Vergi Kodu: 0016
-Vergi Adı: GELİR GEÇİCİ VERGİ
-Tahakkuk Eden: 12.400,00
-Vadesi: 17/05/2026
-
-TOPLAM                                     12.400,00
-
-Fiş No: 2026051701Y7m0000056
+T.C
+HAZİNE VE MALİYE BAKANLIĞI
+İSTANBUL
+VERGİ KİMLİK NUMARASI 5544332211 ( T.C. Kimlik No )
+SOYADI (UNVANI) AK PLASTİK SAN. TİC. LTD. ŞTİ.
+ADI -
+Kabul Tarihi Vergilendirme Dönemi Düzenleme
+Tarihi
+Ana Vergi Kodu 0016
+GELİR GEÇİCİ VERGİ
+17/04/2026 01/2026-03/2026 17/04/2026
+MAKİNA NO
+KADIKÖY
+SIRA NO
+ADRES
+BAĞDAT CAD.
+Kapı No:1 Daire No:2 Tel:
+ KADIKÖY İSTANBUL
+2026051701Y7m0000056
+VADESİ ÖDENECEK
+OLAN
+MAHSUP
+EDİLEN
+TAHAKKUK
+EDEN
+ORAN
+TÜRÜ MATRAH
+0016 GVGEC 50.000,00 12.400,00 0,00 12.400,00 17/05/2026
+TOPLAM 12.400,00
+İşlem Türü 0010
+Thk Türü 9000
+YALNIZ ONİKİBİNDÖRTYÜZ TL .dir
+009281 VERGİ DAİRESİ MÜDÜRLÜĞÜ
+2200610719
+İLİ DEFTERDARLIĞI
 ''';
 
 const sgkPrimText = '''
