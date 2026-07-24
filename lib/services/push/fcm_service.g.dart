@@ -21,7 +21,7 @@ final class FcmServiceProvider
         argument: null,
         retry: null,
         name: r'fcmServiceProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -48,4 +48,4 @@ final class FcmServiceProvider
   }
 }
 
-String _$fcmServiceHash() => r'cde053b52e66c35295b177a509e7b4e4de891d6d';
+String _$fcmServiceHash() => r'c057a042d369dea46a72008cc1447adb2ece34d1';

@@ -59,5 +59,10 @@ class FcmService {
   }
 }
 
-@riverpod
+// keepAlive: this service holds long-lived stream subscriptions
+// (onMessage, onTokenRefresh) that must outlive the widget that triggered
+// initialize() — an autodispose provider gets torn down as soon as nothing
+// is actively watching it, which cancels those listeners (and can crash
+// pending async work, e.g. `initialize()` still awaiting `getToken()`).
+@Riverpod(keepAlive: true)
 FcmService fcmService(Ref ref) => FcmService(ref);

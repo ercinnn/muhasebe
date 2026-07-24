@@ -57,7 +57,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     try {
       await ref.read(fcmServiceProvider).initialize();
     } catch (e, stackTrace) {
-      debugPrint('FCM setup failed (expected without real Firebase credentials): $e\n$stackTrace');
+      debugPrint('FCM setup failed: $e\n$stackTrace');
     }
 
     try {
