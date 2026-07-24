@@ -4,6 +4,13 @@ import '../parsing/label_extraction.dart';
 import '../parsing/tr_date_parser.dart';
 import 'classification_rule.dart';
 
+// The real e-SGK "İşe Giriş Bildirgesi" PDF prints "İşe başlama tarihi"'s
+// value on its own standalone line (nothing else on the line), well after
+// the label itself — this distinguishes it from the document's own
+// generation timestamp, which always trails other text on its line (e.g.
+// "...kapsamındaki sigortalılar için) 16.04.2026 10:01:45").
+final _standaloneDatePattern = RegExp(r'^\d{2}\.\d{2}\.\d{4}$');
+
 /// C) SGK İŞE GİRİŞ BİLDİRGESİ — info-category new-hire notice.
 class SgkIseGirisRule implements ClassificationRule {
   @override
@@ -11,10 +18,14 @@ class SgkIseGirisRule implements ClassificationRule {
 
   @override
   ExtractedDocument extract(String rawText) {
-    final personName = extractLabelValue(rawText, 'Adı Soyadı');
-    final startDateRaw = extractLabelValue(rawText, 'İşe Başlama Tarihi');
-    final startDate = startDateRaw == null ? null : parseTurkishDate(startDateRaw);
-    final occupationCode = extractLabelValue(rawText, 'Meslek Kodu');
+    final personName = extractSgkBildirgePersonName(rawText);
+
+    DateTime? startDate;
+    for (final line in rawText.split('\n')) {
+      if (!_standaloneDatePattern.hasMatch(line.trim())) continue;
+      startDate = parseTurkishDate(line.trim());
+      break;
+    }
 
     return ExtractedDocument(
       category: DocumentCategory.info,
@@ -24,7 +35,6 @@ class SgkIseGirisRule implements ClassificationRule {
       // screen's date display.
       dueDate: startDate,
       personName: personName,
-      metadata: occupationCode == null ? null : {'meslekKodu': occupationCode},
       needsManualEntry: personName == null || startDate == null,
       needsReminder: false,
     );

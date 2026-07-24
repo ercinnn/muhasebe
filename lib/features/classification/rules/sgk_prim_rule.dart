@@ -3,7 +3,7 @@ import '../models/extracted_document.dart';
 import '../parsing/label_extraction.dart';
 import 'classification_rule.dart';
 
-final _periodPattern = RegExp(r'(\d{4})/(\d{1,2})');
+final _periodPattern = RegExp(r'\b(\d{4})/(\d{1,2})\b');
 
 /// Last day of the month following [year]/[month] — SGK prim accrual
 /// notices don't print a due date, so it's computed from the period.
@@ -28,24 +28,35 @@ class SgkPrimRule implements ClassificationRule {
 
   @override
   ExtractedDocument extract(String rawText) {
-    final personName = extractLabelValue(rawText, 'Unvan');
-    final period = extractLabelValue(rawText, 'AİT OLDUĞU YIL / AY');
-    final amount = extractAmountFromLabelLine(rawText, 'ÖDENECEK NET TUTAR');
+    // "AİT OLDUĞU YIL / AY" isn't followed by its value on the same line —
+    // e-SGK's tahakkuk fişi dumps every field's label, then every field's
+    // value, in a different order. The period is the only "YYYY/MM" token
+    // in the document, so it's found directly rather than via its label.
+    final periodMatch = _periodPattern.firstMatch(rawText);
+    final period = periodMatch?.group(0);
 
     DateTime? dueDate;
-    final periodMatch = period == null ? null : _periodPattern.firstMatch(period);
     if (periodMatch != null) {
       final year = int.parse(periodMatch.group(1)!);
       final month = int.parse(periodMatch.group(2)!);
       dueDate = sgkDueDate(year, month);
     }
 
-    final headCount = extractLabelValue(rawText, 'Sigortalı Sayısı');
-    final dayCount = extractLabelValue(rawText, 'Gün Sayısı');
-    final metadata = <String, String>{
-      'sigortaliSayisi': ?headCount,
-      'gunSayisi': ?dayCount,
-    };
+    // "Unvanı" isn't on the same line as its value either. In the fixed
+    // template, the employer name is printed two lines above the period
+    // value (Unvanı, Belge Kabul Tarihi, AİT OLDUĞU YIL / AY, in that order).
+    String? personName;
+    if (period != null) {
+      final lines = rawText.split('\n');
+      final periodIndex = lines.indexWhere((line) => line.trim() == period);
+      if (periodIndex >= 2) {
+        final candidate = lines[periodIndex - 2].trim();
+        if (candidate.isNotEmpty) personName = candidate;
+      }
+    }
+
+    // "ÖDENECEK NET TUTAR" is always the final figure printed on the page.
+    final amount = extractLastAmount(rawText);
 
     return ExtractedDocument(
       category: DocumentCategory.payment,
@@ -54,7 +65,6 @@ class SgkPrimRule implements ClassificationRule {
       amount: amount,
       dueDate: dueDate,
       personName: personName,
-      metadata: metadata.isEmpty ? null : metadata,
       needsManualEntry: amount == null || dueDate == null,
       needsReminder: amount != null && amount > 0,
     );

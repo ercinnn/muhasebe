@@ -101,3 +101,38 @@ final _fisNoPattern = RegExp(r'\b\d{8}[0-9A-Za-z]{6,}\b');
 /// the alphanumeric code under the barcode (an 8-digit date prefix followed
 /// by an office/sequence code, e.g. "2026072201Y7m0000088").
 String? extractFisNo(String text) => _fisNoPattern.firstMatch(text)?.group(0);
+
+/// Extracts the last Turkish-formatted amount found anywhere in the text.
+/// Useful for fixed-template documents (e.g. SGK's prim tahakkuk fişi)
+/// where the label for the final total ("ÖDENECEK NET TUTAR") is dumped far
+/// from its value by the PDF's text extraction order, but the value is
+/// reliably the very last figure printed on the page.
+double? extractLastAmount(String text) {
+  final matches = _amountPattern.allMatches(text).toList();
+  if (matches.isEmpty) return null;
+  return parseTurkishNumber(matches.last.group(0)!);
+}
+
+final _isoBirthDatePattern = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+
+/// Extracts "Adı Soyadı" from an SGK sigortalı bildirgesi (işe giriş/işten
+/// ayrılış). These PDFs dump the identity section's field *values* as a
+/// contiguous run of standalone lines near the end of the text — in the
+/// fixed order Adı, Soyadı, [İlk Soyadı, omitted entirely when blank], Baba
+/// Adı, Ana Adı, Doğum Yeri, Doğum Tarihi — disconnected from their field
+/// labels, which are dumped separately near the top. Doğum Tarihi's
+/// "YYYY-MM-DD" format is distinctive enough to anchor on; Adı/Soyadı are
+/// then reliably 5/4 lines above it (validated against real İşe Giriş and
+/// İşten Ayrılış bildirgesi samples).
+String? extractSgkBildirgePersonName(String text) {
+  final lines = text.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    if (!_isoBirthDatePattern.hasMatch(lines[i].trim())) continue;
+    if (i < 5) continue;
+    final firstName = lines[i - 5].trim();
+    final lastName = lines[i - 4].trim();
+    if (firstName.isEmpty || lastName.isEmpty) continue;
+    return '$firstName $lastName';
+  }
+  return null;
+}

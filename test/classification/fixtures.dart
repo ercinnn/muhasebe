@@ -203,62 +203,180 @@ YALNIZ ONİKİBİNDÖRTYÜZ TL .dir
 İLİ DEFTERDARLIĞI
 ''';
 
+// SGK PRİM TAHAKKUK FİŞİ: modeled on a real e-SGK sample. Labels and values
+// are dumped in two disconnected groups — every label, then every value, in
+// the same relative order the fields appear on the visual form (ADRES,
+// Kullanıcı/Makine No, Sıra No/Fiş No, Sicil No, Unvanı, Belge Kabul
+// Tarihi, AİT OLDUĞU YIL/AY) — rather than as adjacent "label: value" pairs.
 const sgkPrimText = '''
 T.C.
 SOSYAL GÜVENLİK KURUMU BAŞKANLIĞI
-İŞYERİ PRİM TAHAKKUK FİŞİ
-
-Unvan: YILMAZ TİCARET LTD. ŞTİ.
-AİT OLDUĞU YIL / AY: 2026/06
-Sigortalı Sayısı: 12
-Gün Sayısı: 360
-PRİM TUTARI: 45.230,50
-ÖDENECEK NET TUTAR: 45.230,50
+SİGORTA PRİMLERİ GENEL MÜDÜRLÜĞÜ
+TAHAKKUK FİŞİ
+No AÇIKLAMA PRİME ESAS KAZANÇ
+TUTARI
+PRİM ORANI
+%
+PRİM TUTARI
+:
+:
+:
+:
+:
+(5510) ASIL Belge türü:
+22.07.2026 14:40
+AİT OLDUĞU YIL / AY
+ADRES:
+BELGE KABUL TARİHİ
+Sicil No
+Kullanıcı / Makine No
+Sıra No / Fiş numarası
+Unvanı
+:
+MERKEZ MAH. ATATÜRK CAD. No:1 İSTANBUL
+WWWMUHT / EBV2-01
+1000 / 22.07.2026-MBBG-1000
+441000101100000000000-00/000
+YILMAZ TİCARET LTD. ŞTİ.
+22.07.2026
+2026/06
+SGM(kod-ad) : SGK MERKEZ SOSYAL GÜVENLİK MERKEZİ
+1 KISA VADELİ SİGORTA KOLLARI PRİMİ 45.230,50 2,25 1.017,69
+2 MALULLUK,YAŞLILIK VE ÖLÜM SİG. PRİMİ 45.230,50 21,00 9.498,41
+3 GENEL SAĞLIK SİGORTASI PRİMİ 45.230,50 12,50 5.653,81
+4 İŞSİZLİK SİGORTASI PRİMİ 45.230,50 3,00 1.356,92
+GÜN SAYISI:
+TOPLAM PRİM
+NET PRİM TUTARI
+ÖDENECEK NET TUTAR
+İŞSİZLİK TUTARI
+KİŞİ SAYISI: 12
+360
+50.000,00
+0,00
+49.500,00
+1.500,00
+45.230,50
 ''';
 
 const sgkPrimYearRolloverText = '''
 T.C.
 SOSYAL GÜVENLİK KURUMU BAŞKANLIĞI
-İŞYERİ PRİM TAHAKKUK FİŞİ
-
-Unvan: DEMIR YAPI A.Ş.
-AİT OLDUĞU YIL / AY: 2026/12
-Sigortalı Sayısı: 5
-Gün Sayısı: 150
-PRİM TUTARI: 18.000,00
-ÖDENECEK NET TUTAR: 18.000,00
+SİGORTA PRİMLERİ GENEL MÜDÜRLÜĞÜ
+TAHAKKUK FİŞİ
+AİT OLDUĞU YIL / AY
+ADRES:
+BELGE KABUL TARİHİ
+Sicil No
+Kullanıcı / Makine No
+Sıra No / Fiş numarası
+Unvanı
+:
+MERKEZ MAH. ATATÜRK CAD. No:1 İSTANBUL
+WWWMUHT / EBV2-01
+1000 / 22.07.2026-MBBG-1000
+441000101100000000000-00/000
+DEMIR YAPI A.Ş.
+22.07.2026
+2026/12
+GÜN SAYISI:
+ÖDENECEK NET TUTAR
+150
+18.000,00
 ''';
 
 const sgkPrimLeapYearText = '''
 T.C.
 SOSYAL GÜVENLİK KURUMU BAŞKANLIĞI
-İŞYERİ PRİM TAHAKKUK FİŞİ
-
-Unvan: KAYA İNŞAAT LTD. ŞTİ.
-AİT OLDUĞU YIL / AY: 2028/01
-Sigortalı Sayısı: 8
-Gün Sayısı: 240
-PRİM TUTARI: 22.500,00
-ÖDENECEK NET TUTAR: 22.500,00
+SİGORTA PRİMLERİ GENEL MÜDÜRLÜĞÜ
+TAHAKKUK FİŞİ
+AİT OLDUĞU YIL / AY
+ADRES:
+BELGE KABUL TARİHİ
+Sicil No
+Kullanıcı / Makine No
+Sıra No / Fiş numarası
+Unvanı
+:
+MERKEZ MAH. ATATÜRK CAD. No:1 İSTANBUL
+WWWMUHT / EBV2-01
+1000 / 22.07.2026-MBBG-1000
+441000101100000000000-00/000
+KAYA İNŞAAT LTD. ŞTİ.
+22.07.2026
+2028/01
+GÜN SAYISI:
+ÖDENECEK NET TUTAR
+240
+22.500,00
 ''';
 
+// SGK sigortalı bildirgeleri (işe giriş/işten ayrılış): modeled on real
+// e-SGK samples. The identity section's field values (Adı, Soyadı, Baba
+// Adı, Ana Adı, Doğum Yeri, Doğum Tarihi) are dumped as a contiguous block
+// near the end, disconnected from their labels — see
+// extractSgkBildirgePersonName's doc comment.
 const sgkIseGirisText = '''
 T.C.
-SOSYAL GÜVENLİK KURUMU BAŞKANLIĞI
+SOSYAL GÜVENLİK KURUMU
 SİGORTALI İŞE GİRİŞ BİLDİRGESİ
-
-Adı Soyadı: AHMET YILMAZ
-İşe Başlama Tarihi: 01/07/2026
-Meslek Kodu: 2411.05
+(4/1-a-b ve 506 SK GM 20 kapsamındaki sigortalılar için) 01.07.2026 09:00:00
+SOSYAL GÜVENLİK SİCİL NUMARASI
+(T.C.KİMLİK NUMARASI)
+A-SİGORTALININ KİMLİK/ADRES BİLGİLERİ
+16 Sigortalının işe başladığı tarih
+Meslek Adı ve Kodu
+01.07.2026
+MERKEZ MAH. ATATÜRK CAD. No:1 İSTANBUL /
+YILMAZ TİCARET LTD. ŞTİ.
+2411.05 -İnşaat Mühendisi
+0
+1 2 3 4 5 6 7 8 9 0
+AHMET
+YILMAZ
+BABAADI
+ANAADI
+İSTANBUL
+1995-03-12
 ''';
 
 const sgkIstenCikisText = '''
 T.C.
-SOSYAL GÜVENLİK KURUMU BAŞKANLIĞI
+SOSYAL GÜVENLİK KURUMU
 SİGORTALI İŞTEN AYRILIŞ BİLDİRGESİ
-
-Adı Soyadı: AHMET YILMAZ
-İşten Ayrılış Tarihi: 15/07/2026
+(4/1-a-b ve 506 SK GM 20 kapsamındaki sigortalılar için)
+SOSYAL GÜVENLİK SİCİL NUMARASI
+(T.C.KİMLİK NUMARASI)
+A-SİGORTALININ KİMLİK/ADRES BİLGİLERİ
+C-SİGORTALININ HİZMET BİLGİLERİ
+15 Sigortalının İşten Ayrılış Tarihi
+1234567890123
+15.07.2026 16
+0.0 0.0 0
+0.0 14
+0
+06
+0
+15
+0
+07
+0
+0
+0
+0
+X
+YILMAZ TİCARET LTD. ŞTİ. MERKEZ MAH. ATATÜRK CAD. No:1 İSTANBUL
+0
+B-SİGORTALININ SOSYAL GÜVENLİK BİLGİLERİ
+01.10.2008 Tarihinden Önce Hizmeti
+Varsa;
+AHMET
+YILMAZ
+BABAADI
+ANAADI
+İSTANBUL
+1995-03-12
+E
 ''';
 
 const unrelatedText = '''
