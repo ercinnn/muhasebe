@@ -354,6 +354,15 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+# on-document-insert is a server-to-server webhook called by the
+# documents-insert pg_net trigger, which cannot attach a user JWT — it
+# authenticates via its own x-webhook-secret header instead (see
+# supabase/functions/on-document-insert/index.ts). Without this, the
+# platform gateway rejects every call with 401
+# UNAUTHORIZED_NO_AUTH_HEADER before the function code ever runs.
+[functions.on-document-insert]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
