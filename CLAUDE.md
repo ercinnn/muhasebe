@@ -56,19 +56,20 @@ flutter run -d emulator-5554 --dart-define-from-file=env/dev.json
 flutter test test/classification
 flutter analyze
 dart run build_runner build --delete-conflicting-outputs
+flutter build apk --release --dart-define-from-file=env/dev.json
 ```
 
 `env/dev.json` gitignore'da — `env/dev.example.json`'dan türetilir
 (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`).
 
-Supabase hosted proje: `tkgbjurobhuyxdetyqxd`. Migration uygulamak için
-`supabase db push` (linked proje). Edge Function deploy:
-`supabase functions deploy on-document-insert`.
+Supabase hosted proje: `tkgbjurobhuyxdetyqxd`. Migration: `supabase db push`
+(linked proje). Edge Function deploy:
+`supabase functions deploy on-document-insert --no-verify-jwt`.
 
 Firebase proje: `muhasebe-643d9` (`flutterfire configure` ile üretildi).
-`lib/firebase_options.dart` ve `android/app/google-services.json` artık
-gerçek değerler içeriyor ve commit edilmiş durumda (API key'ler gizli
-değil, Firebase tarafı app-restriction ile korunuyor — standart pratik).
+`lib/firebase_options.dart` ve `android/app/google-services.json` gerçek
+değerler içeriyor ve commit edilmiş durumda (API key'ler gizli değil,
+Firebase app-restriction ile korunuyor — standart pratik).
 
 GitHub: `https://github.com/ercinnn/muhasebe` (public — Pages ücretsiz
 planda yalnızca public repo'da çalışıyor). Web build **manuel** deploy
@@ -83,209 +84,129 @@ cd build/web && rm -rf .git && git init -q && git checkout -q -b gh-pages \
 ```
 
 Canlı: `https://ercinnn.github.io/muhasebe/`. Kod her değiştiğinde bu adım
-tekrar çalıştırılmadıkça site eski kalır — unutma.
+tekrar çalıştırılmadıkça site eski kalır.
 
-Release APK için proguard kuralı gerekiyor
-(`android/app/proguard-rules.pro` + `build.gradle.kts`'teki
-`proguardFiles(...)`): `google_mlkit_text_recognition` kullanılmayan
-Chinese/Devanagari/Japanese/Korean recognizer sınıflarına referans veriyor,
-R8 bunları "missing class" hatasıyla reddediyor — `-dontwarn` kuralları
-olmadan `flutter build apk --release` başarısız olur.
+Release APK proguard kuralı gerektiriyor (`android/app/proguard-rules.pro`
++ `build.gradle.kts`'teki `proguardFiles(...)`): `google_mlkit_text_recognition`
+kullanılmayan Chinese/Devanagari/Japanese/Korean recognizer sınıflarına
+referans veriyor, `-dontwarn` kuralları olmadan R8 "missing class" hatasıyla
+release build'i reddeder.
 
-## Önemli gotcha'lar (bu oturumda öğrenildi)
+## Önemli gotcha'lar
 
-- **Postgrest/RPC builder'ları lazy** — `Future` implement ederler ama
-  yalnızca `.then()`/`await` ile tetiklenirler. Fire-and-forget
+- **Postgrest/RPC builder'ları lazy** — `Future` implement eder ama yalnızca
+  `.then()`/`await` ile tetiklenir. Fire-and-forget
   `onPressed: () => repo.markPaid(id)` HİÇBİR ŞEY YAPMAZ; her zaman
-  `onPressed: () async { await repo.markPaid(id); }` şeklinde awaitlenmeli.
-- **Riverpod autodispose vs keepAlive** — bir provider async iş bitene
-  kadar veya uzun ömürlü stream/listener tutuyorsa (`.listen(...)`)
-  `@Riverpod(keepAlive: true)` olmalı; aksi halde hiçbir widget izlemiyorsa
-  provider disposed olur ve `Ref` kullanımı "Cannot use the Ref of X after
-  it has been disposed" hatası fırlatır. Örnek: `fcmServiceProvider` —
-  `initialize()` içindeki `await getToken()` sırasında disposed oluyordu,
-  `keepAlive: true` ile düzeltildi (bkz. `lib/services/push/fcm_service.dart`).
-- **`documents` tablosu Realtime publication'a eklenmeli** —
-  `alter publication supabase_realtime add table public.documents;`
-  olmadan `.stream()` `RealtimeSubscribeException` fırlatır.
-- **Android + flutter_local_notifications** — core library desugaring
-  gerektiriyor (`android/app/build.gradle.kts`:
-  `isCoreLibraryDesugaringEnabled = true` + `coreLibraryDesugaring` dep).
-- **Orphan Gradle daemon'lar** — Android build sonrası `java.exe`
-  process'leri bazen elde kalıp sonraki build'leri/ortamı yavaşlatır
-  (2.5GB+ bellek). Donma şüphesinde önce `tasklist | grep -iE "dart|java"`
-  kontrol et, kod regresyonu varsaymadan önce orphan process'leri ele.
-- **adb path'leri** — Git Bash/MSYS `/sdcard/...` yollarını mangle'lar;
-  `MSYS_NO_PATHCONV=1` prefix'i veya `//sdcard/...` çift-slash kullan.
-  Tam koordinat için ekran görüntüsünü gözle kestirmek yerine
+  `onPressed: () async { await repo.markPaid(id); }`.
+- **Riverpod keepAlive** — provider async iş bitene kadar veya uzun ömürlü
+  stream/listener tutuyorsa `@Riverpod(keepAlive: true)` olmalı, aksi halde
+  autodispose provider'da "Cannot use the Ref after it has been disposed"
+  hatası çıkar (bkz. `fcmServiceProvider`).
+- **Realtime**: `documents` tablosu `supabase_realtime` publication'a
+  eklenmeli (`alter publication supabase_realtime add table public.documents;`)
+  yoksa `.stream()` `RealtimeSubscribeException` fırlatır.
+- **flutter_local_notifications + Android**: core library desugaring
+  gerektirir (`isCoreLibraryDesugaringEnabled = true` + dep).
+- **Android bildirim kanalları immutable** — bir kanal ID'si bir kere
+  oluşturulunca ses/önem ayarı cihazda kilitlenir; kod tarafında ayarı
+  değiştirmek yetmez, kanal ID'sini değiştirip (`payment_reminders_v2`
+  gibi) yeni bir kanal oluşturmak gerekir.
+- **Orphan Gradle daemon'lar** — Android build sonrası kalan `java.exe`
+  process'leri (2.5GB+ bellek) sonraki build'leri yavaşlatabilir; donma
+  şüphesinde `tasklist | grep -iE "dart|java"` kontrol et, regresyon
+  varsaymadan önce.
+- **adb + Git Bash/MSYS path mangling** — `/sdcard/...` ve
+  `--base-href /muhasebe/` gibi `/`-başlayan argümanlar mangle edilir
+  (`C:/Program Files/Git/...` olur); `MSYS_NO_PATHCONV=1` prefix'i veya
+  çift-slash (`//sdcard/...`) kullan. Ekran koordinatları için
   `adb shell uiautomator dump` ile `bounds="[x1,y1][x2,y2]"` oku.
-  `flutter build web --base-href /muhasebe/` verirken de aynı mangle olur
-  (`/muhasebe/` → `C:/Program Files/Git/muhasebe/` oluyor) — yine
-  `MSYS_NO_PATHCONV=1` gerekiyor.
-- **Gerçek GİB/SGK PDF'leri "etiket: değer" formatında DEĞİL** —
-  sınıflandırma motoru başta bunu varsayıyordu (bkz. eski
-  `test/classification/fixtures.dart`, "gerçek belgenin kopyası değil"
-  diye not düşülmüştü) ama gerçek pdfrx çıktısı tamamen farklı: her form
-  önce TÜM etiketleri, sonra TÜM değerleri ayrı bloklar halinde basıyor
-  (görsel sütun/tablo sırasına göre, etiket sırasına göre DEĞİL). Örnekler:
-  - Tahakkuk fişi: "Vadesi" ve "Vergilendirme Dönemi" tablo başlığı, "Fiş
-    No" diye bir etiket HİÇ yok (değer barkodun altındaki alfanumerik kod).
-    Çözüm: `label_extraction.dart`'taki `extractTaxPeriod` /
-    `extractEarliestRowDueDate` / `extractFisNo` — regex/pozisyon tabanlı,
-    etiket aramıyor.
-  - SGK prim tahakkuk fişi: aynı sorun, `extractLastAmount` (sayfadaki son
-    tutar = ÖDENECEK NET TUTAR) ve dönem regex'iyle (`\d{4}/\d{1,2}`)
-    çözüldü.
-  - SGK işe giriş/işten ayrılış bildirgeleri: çok alanlı form, kimlik
-    bilgileri (Adı/Soyadı/Baba Adı/Ana Adı/Doğum Yeri/Doğum Tarihi) metnin
-    sonunda ardışık bir blok halinde, doğum tarihinin `YYYY-MM-DD` formatı
-    üzerinden geriye doğru offsetle bulunuyor (`extractSgkBildirgePersonName`).
-    Tarih alanları (işe başlama/işten ayrılış) tek örnekle doğrulandı, GİB
-    fişindeki kadar sağlam değil — yeni gerçek örnek gelirse tekrar kontrol
-    et.
-  - Yeni bir belge türü/varyantı eklerken önce PDF'i `Read` tool'uyla oku
-    (gerçek pdfrx metnini gösterir), varsayımla fixture yazma.
-  - Gerçek kişi mükelleflerde (şirket değil) tahakkuk fişinde "SOYADI
-    (ÜNVANI)" etiketi Türkçe `Ü` ile basılıyor, eski fixture'lar ASCII `U`
-    varsayıyordu (`SOYADI (UNVANI)`) — `tax_accrual_rule.dart` bu yüzden
-    gerçek kişilerde soyadını hiç okuyamıyordu (şirket unvanlarında ADI
-    hanesi zaten "-" olduğundan sorun fark edilmemişti). Düzeltildi;
-    `personName` artık `ADI` + `SOYADI (ÜNVANI)` birleştiriyor (bkz.
-    `individualKdvTaxAccrualText` fixture'ı).
-- **pg_net webhook'ları Supabase gateway'inde varsayılan olarak 401 alır** —
-  `documents` INSERT trigger'ı (`notify_document_insert`) Edge Function'ı
-  `net.http_post` ile çağırıyor ama `Authorization` header'ı göndermiyor
-  (fonksiyonun kendi `x-webhook-secret` kontrolü var, kullanıcı JWT'si yok).
-  Supabase'in varsayılan `verify_jwt = true` davranışı bu isteği fonksiyon
-  koduna hiç ulaşmadan `401 UNAUTHORIZED_NO_AUTH_HEADER` ile reddediyor —
-  push bildirimlerinin hiç gitmemesinin kök nedeni buydu. Çözüm:
-  `supabase/config.toml`'da `[functions.on-document-insert]` altında
-  `verify_jwt = false`, sonra `supabase functions deploy on-document-insert
-  --no-verify-jwt` ile yeniden deploy. Bu tür server-to-server (kullanıcı
-  oturumu olmayan) webhook fonksiyonlarında hep gerekli. Hata `net._http_response`
-  tablosunda görülür (bkz. aşağıdaki debug notu), Edge Function loglarında değil
-  (istek gateway'de fonksiyona ulaşmadan reddedildiği için).
-- **Debug: eski Supabase CLI (2.78) `functions logs` / `db query` komutlarını
-  desteklemiyor** — `npx --yes supabase@latest db query --linked "SELECT ..."`
-  ile linked projeye doğrudan SQL çalıştırılabiliyor (Management API üzerinden,
-  DB şifresi gerekmez). Webhook/trigger debug için en değerli tablo
-  `net._http_response` (pg_net'in attığı her HTTP isteğin gerçek status/body'si —
-  `notify_document_insert` gibi trigger'ların fiilen 200 mü 401 mi döndürdüğünü
-  gösterir) ve `vault.decrypted_secrets` (webhook secret'larının set edilip
-  edilmediğini doğrulamak için).
-- **Push bildirimi data-only** — `on-document-insert` FCM mesajı sessiz bir
-  data payload'ı (görünür bir "notification" bloğu yok), uygulama kodu
-  kendi bildirimini kendi gösteriyor. Eskiden (bu oturumdan önce) yalnızca
-  `payment` kategorisi + `due_date` dolu belgeler için gönderiliyordu ve
-  yalnızca vade tarihine göre yerel alarm PLANLIYORDU — "belge geldi" anlık
-  bildirimi hiç yoktu. Artık (bkz. Durum) her yeni belge için gönderiliyor;
-  `fcm_service.dart` / `fcm_background_handler.dart` push'u alınca önce
-  `notificationService.showNewDocumentNotification(...)` ile ANINDA "Belge
-  Geldi" bildirimini gösteriyor, sonra yalnızca `category == payment` ve
-  `due_date` doluysa `scheduleReminder(...)` ile vade-1 gün/vade günü
-  (saat 09:00 — `settings_repository.dart`) yerel alarmlarını da PLANLIYOR.
-  `_scheduleAt` geçmiş bir tarih için hiçbir şey planlamıyor (satır ~80:
-  `if (scheduled.isBefore(now)) return;`) — yani `due_date` geçmişte olan
-  bir test belgesinde anlık "Belge Geldi" bildirimi gelir ama vade
-  hatırlatma alarmı hiç planlanmaz; vade hatırlatmasını uçtan uca test
-  etmek için `due_date` bugünden ileride olmalı.
-- **Türkçe karakterli test PDF'i üretme** — sınıflandırma motorunu gerçek
-  belge olmadan (örn. ileri tarihli bir vade ile) test etmek için `reportlab`
-  ile sentetik PDF üretilebilir, ama standart fontlar (Helvetica + WinAnsi)
-  Türkçe `İ ı Ş ş Ğ ğ` karakterlerini barındırmaz (Latin-1/WinAnsi'de yok,
-  ISO-8859-9'da var) — `pdfmetrics.registerFont(TTFont(...))` ile
+- **Gerçek GİB/SGK PDF'leri "etiket: değer" formatında DEĞİL** — pdfrx
+  metni her formda önce TÜM etiketleri sonra TÜM değerleri ayrı bloklar
+  halinde çıkarıyor (görsel sütun sırasına göre, etiket sırasına göre
+  DEĞİL). Bu yüzden `label_extraction.dart`'taki extraction fonksiyonları
+  (`extractTaxPeriod`, `extractEarliestRowDueDate`, `extractFisNo`,
+  `extractLastAmount`, `extractSgkBildirgePersonName`) etiket aramak yerine
+  regex/pozisyon tabanlı çalışıyor. Yeni bir belge türü/varyantı eklerken
+  önce PDF'i `Read` tool'uyla oku, varsayımla fixture yazma. Not: gerçek
+  kişi (şirket değil) mükelleflerde "SOYADI (ÜNVANI)" Türkçe `Ü` ile
+  basılıyor (ASCII `U` değil) — `personName` artık `ADI` + bu alanı
+  birleştiriyor.
+- **pg_net webhook'ları Supabase gateway'inde varsayılan 401 alır** — bir
+  DB trigger'ının `net.http_post` ile çağırdığı Edge Function'da kullanıcı
+  JWT'si yoksa (server-to-server, kendi `x-webhook-secret` kontrolü var),
+  Supabase'in varsayılan `verify_jwt = true` isteği fonksiyona hiç
+  ulaştırmadan `401 UNAUTHORIZED_NO_AUTH_HEADER` ile reddeder. Çözüm:
+  `supabase/config.toml`'da `[functions.X]` altında `verify_jwt = false` +
+  `supabase functions deploy X --no-verify-jwt`. Hata Edge Function
+  loglarında değil `net._http_response` tablosunda görülür.
+- **Debug**: `npx --yes supabase@latest db query --linked "SELECT ..."` ile
+  linked projeye Management API üzerinden SQL çalıştırılabilir (DB şifresi
+  gerekmez, eski CLI'da yerleşik `db query` yok). Webhook debug için en
+  değerli tablolar: `net._http_response` (her pg_net isteğinin gerçek
+  status/body'si) ve `vault.decrypted_secrets`.
+- **Push data-only, arka plan isolate'i kendi başına eksik** — FCM mesajı
+  sessiz bir data payload'ı, uygulama kendi bildirimini kendi gösteriyor
+  (`fcm_service.dart` foreground / `fcm_background_handler.dart` arka
+  plan). Arka plan isolate `bootstrap()`'ı hiç çalıştırmaz, kendi
+  başına init etmesi gerekenler:
+  - `tz_data.initializeTimeZones()` + `tz.setLocalLocation(getLocation('Europe/Istanbul'))`
+    çağrılmazsa `tz.local` `LateInitializationError` fırlatır (ya da hiç
+    çağrılmamışsa varsayılan UTC'ye düşüp hatırlatmalar 3 saat geç kurulur).
+  - `NotificationService.init()` içindeki
+    `requestNotificationsPermission()` bir Activity gerektirir — headless
+    isolate'te native `NullPointerException` fırlatıp `init()`'i (ve
+    dolayısıyla bildirimi) hiç göstermeden patlatır. Arka planda
+    `init(requestPermission: false)` ile atlanmalı.
+  - `_scheduleAt` geçmiş bir tarih için hiçbir şey planlamaz (`if
+    (scheduled.isBefore(now)) return;`) — `due_date` geçmişte olan bir test
+    belgesinde anlık "Belge Geldi" bildirimi gelir ama vade hatırlatması
+    hiç planlanmaz.
+- **Türkçe karakterli test PDF'i üretme** — `reportlab` ile sentetik PDF
+  üretilebilir ama standart fontlar (Helvetica/WinAnsi) `İ ı Ş ş Ğ ğ`
+  içermez; `pdfmetrics.registerFont(TTFont(...))` ile
   `C:/Windows/Fonts/arial.ttf` gömülmeli (Identity-H/Unicode CMap). pdfrx
-  (PDFium) metni content stream'deki `Tj`/`TJ` sırasına göre çıkarıyor,
-  görsel pozisyona göre DEĞİL (bkz. yukarıdaki "etiket:değer değil" notu) —
-  yani gerçek bir fixture'ı taklit ederken her satırı ayrı bir
-  `canvas.drawString(...)` çağrısıyla, fixture'daki satır sırasıyla birebir
-  aynı sırada basmak yeterli; x/y koordinatları extraction sonucunu etkilemiyor.
+  metni content stream sırasına göre çıkarır (görsel pozisyona göre
+  değil), yani fixture taklidi yaparken satır sırası yeterli, x/y önemsiz.
 
 ## Durum
 
-7 faz da tamamlandı ve commit edildi (Supabase şema/RLS → auth/roller →
-sınıflandırma motoru+test → muhasebeci yükleme akışı → mükellef
-liste/takvim ekranları → mobil bildirim sistemi → web görsel bildirimler).
-Firebase gerçek proje ile bağlandı, Android emülatörde FCM token kaydı
-uçtan uca doğrulandı (`device_tokens` tablosuna yazıyor, disposed-Ref
-hatası yok).
+7 faz tamamlandı: Supabase şema/RLS → auth/roller → sınıflandırma
+motoru+test → muhasebeci yükleme akışı → mükellef liste/takvim ekranları →
+mobil bildirim sistemi → web görsel bildirimler. Web build GitHub
+Pages'te yayında.
 
-Push bildirim kurulumu tamamlandı ve sunucu tarafında uçtan uca doğrulandı:
-`FCM_SERVICE_ACCOUNT_JSON`/`WEBHOOK_SECRET` secret'ları set, Vault'ta
-`edge_function_url`/`webhook_secret` mevcut. Yolda bir kök neden bulundu ve
-düzeltildi — trigger'ın attığı webhook isteği gateway'de `401
-UNAUTHORIZED_NO_AUTH_HEADER` ile reddediliyordu (bkz. "Önemli gotcha'lar" —
-`verify_jwt = false` fix'i, `supabase/config.toml`). Düzeltme sonrası yeni
-bir belge gönderiminde `net._http_response` `{"sent":1}` / status 200
-döndürdüğü doğrulandı.
+Push bildirimleri uçtan uca doğrulandı (gerçek Samsung A51 cihazında):
+anlık "Belge Geldi" bildirimi her yeni belgede geliyor (uygulama tamamen
+kapalıyken de), ödeme belgelerinde ayrıca vade-1 gün/vade günü hatırlatması
+planlanıyor — bu akıştaki arka-plan bug'ları (izin isteği crash'i,
+timezone init eksikliği) düzeltildi (bkz. gotcha'lar). Vade hatırlatması
+artık alarm-stili (`payment_reminders_v2` kanalı, tam ekran + alarm sesi +
+max önem) ama yeni kanalla henüz ses/tam ekranın gerçekten geldiği
+doğrulanmadı — **kalan adım budur**. Android 14+'ta `USE_FULL_SCREEN_INTENT`
+izni otomatik gelmeyebilir (Ayarlar → Uygulamalar → Özel erişim → Tam
+ekran bildirimler).
 
-Proje GitHub'a taşındı (`ercinnn/muhasebe`, public) ve web build GitHub
-Pages'te yayında (`https://ercinnn.github.io/muhasebe/`, manuel deploy —
-yukarıdaki "Geliştirme komutları" bölümüne bak).
+Ödemeler/Bilgilendirme/Takvim kartlarında okunmadı göstergesi var
+(`seen_at`/`seenAt`, `payment_list_tile.dart` + `info_screen.dart`).
 
-Sınıflandırma motoru gerçek GİB tahakkuk fişi + SGK belgeleriyle test edilip
-düzeltildi (bkz. "Önemli gotcha'lar" — gerçek PDF'ler etiket:değer formatında
-değil). Tax accrual (KDV/KDV2/Muhtasar/Geçici Vergi/Damga) ve SGK prim
-tahakkuk fişi düzeltmeleri gerçek örneklerle uçtan uca doğrulandı. SGK işe
-giriş/işten ayrılış bildirgelerinde isim çıkarımı sağlam, tarih alanları
-(işe başlama/işten ayrılış) tek örnekle test edildi — uygulamada farklı
-örneklerle ayrıca doğrulanmalı.
+Sınıflandırma motoru gerçek GİB/SGK belgeleriyle doğrulandı (bkz.
+gotcha'lar). SGK işe giriş/işten ayrılış tarih alanları tek örnekle test
+edildi — yeni örnekle tekrar kontrol edilmeli.
 
-Test hesapları (Supabase `auth.users`, şifreler sıfırlandı — güncel şifre
-için önceki konuşma geçmişine ya da veritabanına bak):
-`muhasebeci.demo@example.com` (accountant), `mukellef.demo@example.com`
-(client). Gerçek cihaz testleri ayrıca kişisel hesaplarla da yapıldı
-(`cakalogluercin86@gmail.com` mükellef).
+Test hesapları: `muhasebeci.demo@example.com` / `mukellef.demo@example.com`
+(Supabase `auth.users`, şifre sıfırlandı — önceki konuşmaya bak). Gerçek
+cihaz testleri `cakalogluercin86@gmail.com` (mükellef) ile de yapıldı.
 
-Anlık "Belge Geldi" bildirimi eklendi ve gerçek Samsung A51 cihazında
-uçtan uca doğrulandı — uygulama tamamen kapalıyken de (recents'ten
-kaydırarak kapatılmış halde) geliyor; artık her yeni belgede (kategori
-fark etmez) push geldiği anda görünür bir bildirim çıkıyor. Yolda iki
-gerçek arka-plan bug'ı bulunup düzeltildi:
-1. Arka plan handler'ı `requestNotificationsPermission()` çağırıyordu,
-   Activity olmayan headless isolate'te bu native `NullPointerException`
-   fırlatıp `init()`'i (dolayısıyla bildirimi) hiç göstermeden
-   patlatıyordu — arka planda izin isteği artık atlanıyor
-   (`init(requestPermission: false)`).
-2. Arka plan handler'ı hiç `tz_data.initializeTimeZones()` çağırmıyordu
-   (yalnızca `bootstrap()` çağırıyor, o da bu isolate'te hiç çalışmıyor)
-   — bu yüzden ödeme belgelerinde vade hatırlatması arka planda hiç
-   planlanamıyordu (`LateInitializationError`). Ayrıca
-   `tz.setLocalLocation(...)` hiç çağrılmadığından tüm hatırlatmalar UTC
-   varsayılanıyla (Türkiye'den 3 saat geç, örn. 09:00 yerine 12:00)
-   planlanıyordu — `Europe/Istanbul` sabitlendi. Vade alarmının doğru
-   saatte (09:00) kurulduğu `adb shell dumpsys alarm` ile doğrulandı.
-
-Vade hatırlatması artık **alarm-stili** bir bildirim: yeni bir kanal
-(`payment_reminders_v2` — `_v1` kanalı bazı cihazlarda daha önceki
-testlerden sessiz kalmış haliyle kalıcı olarak kilitlendiği için kanal
-id'si bilerek değiştirildi), `Importance.max`, `Priority.max`,
-`AndroidNotificationCategory.alarm`, `fullScreenIntent: true`, alarm ses
-kanalı (`AudioAttributesUsage.alarm`) — `AndroidManifest.xml`'e
-`USE_FULL_SCREEN_INTENT` izni eklendi. Android 14+'ta bu izin otomatik
-gelmeyebilir, gerekirse Ayarlar → Uygulamalar → Özel erişim → Tam ekran
-bildirimler'den elle açılmalı (bkz. "Kalan adım").
-
-Ödemeler/Bilgilendirme/Takvim kartlarında okunmadı göstergesi eklendi
-(`payment_list_tile.dart`, `info_screen.dart`) — `seen_at`/`seenAt` verisi
-zaten vardı (yalnızca üstteki zarf ikonunun sayacında kullanılıyordu), yeni
-migration gerekmedi.
-
-**Kalan adım:** Yeni `payment_reminders_v2` kanalıyla vade hatırlatmasının
-gerçekten sesli/tam ekran geldiğini doğrulamak — önceki testte (eski kanal
-ile, gece 00:00'da) bildirim sessiz gelmişti, sebebi ya eski kanalın kilitli
-sessiz ayarı ya da telefonun o saatteki Rahatsız Etmeyin/Gece modu olabilir,
-netleşmedi. Ayrıca reminder ayarları (days before = 1, hour = 0) test için
-değiştirildi, doğrulama sonrası varsayılana (`defaultReminderHour = 9`,
+Reminder ayarları test için değiştirildi (days before = 1, hour = 0) —
+doğrulama sonrası varsayılana (`defaultReminderHour = 9`,
 `defaultReminderDaysBefore = 1`, `settings_repository.dart`) döndürülmeli.
 
-## Yapılabilir geliştirmeler (henüz yapılmadı, istenirse eklenebilir)
+## Yapılabilir geliştirmeler
 
-1. **Projeyi farklı bir muhasebe firması için ikinci, bağımsız bir kurulum
-   olarak çoğaltma** (ayrı Supabase projesi, ayrı Firebase projesi, ayrı
-   GitHub reposu — paylaşımlı veri yok): app id/isim/ikon değişikliği +
-   yeni Supabase projesine migration'ları uygulama + `flutterfire configure`
-   ile yeni Firebase projesi bağlama + `env/dev.json` ve web deploy
-   `--base-href`'i güncelleme. Bu konsollara (Supabase/Firebase/GitHub)
-   giriş kullanıcının kendi hesabıyla yapılması gerekiyor, kod tarafı
-   zaten büyük ölçüde ortam-bağımsız (`Env` sınıfı, `--dart-define-from-file`).
+1. **İkinci, bağımsız bir firma için kopyalama** (ayrı Supabase/Firebase
+   projesi + ayrı GitHub reposu, paylaşımlı veri yok): app id/isim/ikon
+   değiştir, yeni Supabase projesine migration'ları uygula,
+   `flutterfire configure` ile yeni Firebase projesi bağla, `env/dev.json`
+   ve web deploy `--base-href`'i güncelle. Konsollara giriş kullanıcının
+   kendi hesabıyla yapılmalı; kod tarafı zaten ortam-bağımsız (`Env`
+   sınıfı, `--dart-define-from-file`).
