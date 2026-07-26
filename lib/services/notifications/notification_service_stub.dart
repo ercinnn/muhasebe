@@ -9,6 +9,13 @@ class NotificationServiceImpl implements NotificationService {
   Future<void> init() async {}
 
   @override
+  Future<void> showNewDocumentNotification({
+    required String documentId,
+    required DocType docType,
+    double? amount,
+  }) async {}
+
+  @override
   Future<void> scheduleReminder({
     required String documentId,
     required DateTime dueDate,

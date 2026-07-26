@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
+import '../../core/constants/document_enums.dart';
 import '../../firebase_options.dart';
 import '../notifications/notification_service_mobile.dart';
 import 'push_payload.dart';
@@ -17,10 +18,19 @@ Future<void> fcmBackgroundMessageHandler(RemoteMessage message) async {
 
   final service = NotificationServiceImpl();
   await service.init();
-  await service.scheduleReminder(
+  await service.showNewDocumentNotification(
     documentId: payload.documentId,
-    dueDate: payload.dueDate,
     docType: payload.docType,
     amount: payload.amount,
   );
+
+  final dueDate = payload.dueDate;
+  if (payload.category == DocumentCategory.payment && dueDate != null) {
+    await service.scheduleReminder(
+      documentId: payload.documentId,
+      dueDate: dueDate,
+      docType: payload.docType,
+      amount: payload.amount,
+    );
+  }
 }

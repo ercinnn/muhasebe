@@ -11,6 +11,15 @@ export 'notification_service_stub.dart' if (dart.library.io) 'notification_servi
 abstract class NotificationService {
   Future<void> init();
 
+  /// Shows an immediate "Belge Geldi" notification for a newly uploaded
+  /// document — unlike [scheduleReminder], this fires right away instead of
+  /// at a future date, and applies to every category (not just payments).
+  Future<void> showNewDocumentNotification({
+    required String documentId,
+    required DocType docType,
+    double? amount,
+  });
+
   /// Schedules (replacing any existing ones) the due-1 and due-day
   /// reminders for a pending payment. Takes the raw fields rather than a
   /// [DocumentRecord] because the same call is made both from a full DB

@@ -2,6 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/constants/document_enums.dart';
 import '../notifications/notification_providers.dart';
 import '../supabase/supabase_providers.dart';
 import 'fcm_background_handler.dart';
@@ -48,14 +49,22 @@ class FcmService {
     final payload = PushPayload.fromData(message.data);
     if (payload == null) return;
 
-    await _ref
-        .read(notificationServiceProvider)
-        .scheduleReminder(
-          documentId: payload.documentId,
-          dueDate: payload.dueDate,
-          docType: payload.docType,
-          amount: payload.amount,
-        );
+    final notificationService = _ref.read(notificationServiceProvider);
+    await notificationService.showNewDocumentNotification(
+      documentId: payload.documentId,
+      docType: payload.docType,
+      amount: payload.amount,
+    );
+
+    final dueDate = payload.dueDate;
+    if (payload.category == DocumentCategory.payment && dueDate != null) {
+      await notificationService.scheduleReminder(
+        documentId: payload.documentId,
+        dueDate: dueDate,
+        docType: payload.docType,
+        amount: payload.amount,
+      );
+    }
   }
 }
 

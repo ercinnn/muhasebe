@@ -173,17 +173,22 @@ olmadan `flutter build apk --release` başarısız olur.
   `notify_document_insert` gibi trigger'ların fiilen 200 mü 401 mi döndürdüğünü
   gösterir) ve `vault.decrypted_secrets` (webhook secret'larının set edilip
   edilmediğini doğrulamak için).
-- **Push bildirimi data-only, ekranda anlık bir şey GÖSTERMEZ** —
-  `on-document-insert` FCM mesajı sessiz bir data payload'ı; uygulama bunu
-  alınca (foreground/background handler, `fcm_service.dart` /
-  `fcm_background_handler.dart`) sadece `notification_service_mobile.dart`
-  üzerinden vade tarihine göre yerel bir alarm PLANLAR (vade-1 gün ve vade
-  günü, varsayılan saat 09:00 — `settings_repository.dart`). `_scheduleAt`
-  geçmiş bir tarih için hiçbir şey planlamıyor (satır ~80: `if (scheduled
-  .isBefore(now)) return;`), yani `due_date` geçmişte olan bir test belgesi
-  gönderilirse push sunucu tarafında başarıyla gitse bile (`sent:1`)
-  telefonda HİÇBİR bildirim çıkmaz — bu bir hata değil, tasarım. Uçtan uca
-  test için `due_date` bugünden ileride olmalı.
+- **Push bildirimi data-only** — `on-document-insert` FCM mesajı sessiz bir
+  data payload'ı (görünür bir "notification" bloğu yok), uygulama kodu
+  kendi bildirimini kendi gösteriyor. Eskiden (bu oturumdan önce) yalnızca
+  `payment` kategorisi + `due_date` dolu belgeler için gönderiliyordu ve
+  yalnızca vade tarihine göre yerel alarm PLANLIYORDU — "belge geldi" anlık
+  bildirimi hiç yoktu. Artık (bkz. Durum) her yeni belge için gönderiliyor;
+  `fcm_service.dart` / `fcm_background_handler.dart` push'u alınca önce
+  `notificationService.showNewDocumentNotification(...)` ile ANINDA "Belge
+  Geldi" bildirimini gösteriyor, sonra yalnızca `category == payment` ve
+  `due_date` doluysa `scheduleReminder(...)` ile vade-1 gün/vade günü
+  (saat 09:00 — `settings_repository.dart`) yerel alarmlarını da PLANLIYOR.
+  `_scheduleAt` geçmiş bir tarih için hiçbir şey planlamıyor (satır ~80:
+  `if (scheduled.isBefore(now)) return;`) — yani `due_date` geçmişte olan
+  bir test belgesinde anlık "Belge Geldi" bildirimi gelir ama vade
+  hatırlatma alarmı hiç planlanmaz; vade hatırlatmasını uçtan uca test
+  etmek için `due_date` bugünden ileride olmalı.
 - **Türkçe karakterli test PDF'i üretme** — sınıflandırma motorunu gerçek
   belge olmadan (örn. ileri tarihli bir vade ile) test etmek için `reportlab`
   ile sentetik PDF üretilebilir, ama standart fontlar (Helvetica + WinAnsi)
@@ -212,10 +217,11 @@ düzeltildi — trigger'ın attığı webhook isteği gateway'de `401
 UNAUTHORIZED_NO_AUTH_HEADER` ile reddediliyordu (bkz. "Önemli gotcha'lar" —
 `verify_jwt = false` fix'i, `supabase/config.toml`). Düzeltme sonrası yeni
 bir belge gönderiminde `net._http_response` `{"sent":1}` / status 200
-döndürdüğü doğrulandı. Kalan tek şey: push data-only olduğundan (bkz. ilgili
-gotcha) gerçek cihazda görünür bir bildirim ancak `due_date`'e yakın bir
-zamanda (varsayılan vade-1 gün ve vade günü saat 09:00) çıkıyor — anlık
-"yeni belge geldi" bildirimi şu an sistemde yok, istenirse ayrı eklenebilir.
+döndürdüğü doğrulandı. Anlık "Belge Geldi" bildirimi de eklendi ve deploy
+edildi (bkz. ilgili gotcha) — artık her yeni belgede (kategori fark etmez)
+push geldiği anda görünür bir bildirim çıkıyor, `payment` + `due_date`
+dolu belgelerde ayrıca vade-1 gün/vade günü yerel alarmı da planlanıyor.
+Gerçek cihazda henüz uçtan uca doğrulanmadı (bkz. "Kalan adım").
 
 Proje GitHub'a taşındı (`ercinnn/muhasebe`, public) ve web build GitHub
 Pages'te yayında (`https://ercinnn.github.io/muhasebe/`, manuel deploy —
@@ -234,7 +240,11 @@ için önceki konuşma geçmişine ya da veritabanına bak):
 `muhasebeci.demo@example.com` (accountant), `mukellef.demo@example.com`
 (client).
 
-**Kalan adım:** Vadesi ileri tarihli bir belge gönderip (test için
-`C:\Projects\Flutter\Pdf\Tahakkuk_KDV1_test_future_20260820.pdf` — vade
-20/08/2026 — kullanılabilir) telefonda vade tarihine yakın saatte gerçek
-bildirimin göründüğünü doğrulamak.
+**Kalan adımlar:**
+1. Herhangi bir belge gönderip (vade tarihi fark etmez) telefonda anlık
+   "Belge Geldi" bildiriminin göründüğünü doğrulamak (bu oturumda eklendi,
+   `on-document-insert` deploy edildi ama cihazda henüz test edilmedi).
+2. Vadesi ileri tarihli bir belge gönderip (test için
+   `C:\Projects\Flutter\Pdf\Tahakkuk_KDV1_test_future_20260820.pdf` — vade
+   20/08/2026 — kullanılabilir) telefonda vade tarihine yakın saatte vade
+   hatırlatma bildiriminin de ayrıca göründüğünü doğrulamak.

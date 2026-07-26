@@ -1,9 +1,11 @@
 // Triggered by a pg_net-based database trigger (see
 // supabase/migrations/*_documents_insert_webhook.sql) on every INSERT into
-// public.documents. Looks up the client's mobile device tokens and sends a
-// data-only FCM push carrying enough info (document_id, doc_type, due_date,
-// amount) for the app to schedule a local reminder without a further
-// network round-trip — including from the background isolate handler.
+// public.documents, regardless of category. Looks up the client's mobile
+// device tokens and sends a data-only FCM push carrying enough info
+// (document_id, doc_type, category, due_date, amount) for the app to both
+// show an immediate "Belge Geldi" notification and schedule a due-date
+// local reminder (payment docs only) without a further network round-trip
+// — including from the background isolate handler.
 //
 // Required secrets (`supabase secrets set ...`):
 //   WEBHOOK_SECRET             — shared secret checked against the trigger's request
@@ -37,12 +39,6 @@ Deno.serve(async (req) => {
 
   const { record } = (await req.json()) as DocumentInsertPayload;
 
-  // Only payment documents with a due date are worth a reminder push;
-  // info documents and mahsup (no_payment) rows don't need one.
-  if (record.category !== "payment" || !record.due_date) {
-    return new Response(JSON.stringify({ skipped: true }), { status: 200 });
-  }
-
   const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -67,7 +63,7 @@ Deno.serve(async (req) => {
     document_id: record.id,
     doc_type: record.doc_type,
     category: record.category,
-    due_date: record.due_date,
+    due_date: record.due_date ?? "",
     amount: record.amount?.toString() ?? "",
   };
   // Never include record.raw_text or any other field here — it may contain

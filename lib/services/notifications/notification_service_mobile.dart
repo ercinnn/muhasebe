@@ -9,6 +9,8 @@ import 'notification_service.dart';
 
 const _channelId = 'payment_reminders';
 const _channelName = 'Ödeme Hatırlatmaları';
+const _newDocChannelId = 'new_document';
+const _newDocChannelName = 'Yeni Belge Bildirimleri';
 
 /// Mobile: schedules local notifications at 09:00 on due-date-minus-1-day
 /// and due-date for pending payment documents.
@@ -31,6 +33,24 @@ class NotificationServiceImpl implements NotificationService {
   }
 
   final _settings = SettingsRepository();
+
+  @override
+  Future<void> showNewDocumentNotification({
+    required String documentId,
+    required DocType docType,
+    double? amount,
+  }) async {
+    final body = amount != null ? '${docType.label}: ${formatCurrencyTr(amount)}' : docType.label;
+    await _plugin.show(
+      id: _notificationId(documentId, isDueDay: false) + 2,
+      title: 'Belge Geldi',
+      body: body,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(_newDocChannelId, _newDocChannelName),
+        iOS: DarwinNotificationDetails(),
+      ),
+    );
+  }
 
   @override
   Future<void> scheduleReminder({
