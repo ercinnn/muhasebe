@@ -17,8 +17,11 @@ class PaymentListTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final due = DueStatus.of(document);
     final canMarkPaid = document.status == DocumentStatus.pending;
+    final isUnread = document.seenAt == null;
+    final scheme = Theme.of(context).colorScheme;
 
     return Card(
+      color: isUnread ? scheme.primaryContainer.withValues(alpha: 0.35) : null,
       child: ListTile(
         onTap: () => context.push('/document/${document.id}'),
         isThreeLine: true,
@@ -26,7 +29,19 @@ class PaymentListTile extends ConsumerWidget {
           backgroundColor: due.color.withValues(alpha: 0.15),
           child: Icon(Icons.receipt_long, color: due.color),
         ),
-        title: Text(document.docType.label),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              document.docType.label,
+              style: TextStyle(fontWeight: isUnread ? FontWeight.bold : null),
+            ),
+            if (isUnread) ...[
+              const SizedBox(width: 6),
+              Icon(Icons.circle, size: 8, color: scheme.primary),
+            ],
+          ],
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

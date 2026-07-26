@@ -28,13 +28,28 @@ class InfoScreen extends ConsumerWidget {
           separatorBuilder: (context, index) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final doc = infoDocs[index];
+            final isUnread = doc.seenAt == null;
+            final scheme = Theme.of(context).colorScheme;
             return Card(
+              color: isUnread ? scheme.primaryContainer.withValues(alpha: 0.35) : null,
               child: ListTile(
                 onTap: () => context.push('/document/${doc.id}'),
                 leading: Icon(
                   doc.docType == DocType.iseGiris ? Icons.person_add_alt_1 : Icons.person_remove,
                 ),
-                title: Text(doc.personName ?? 'İsimsiz'),
+                title: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      doc.personName ?? 'İsimsiz',
+                      style: TextStyle(fontWeight: isUnread ? FontWeight.bold : null),
+                    ),
+                    if (isUnread) ...[
+                      const SizedBox(width: 6),
+                      Icon(Icons.circle, size: 8, color: scheme.primary),
+                    ],
+                  ],
+                ),
                 subtitle: Text(
                   '${doc.docType.label}'
                   '${doc.dueDate != null ? ' • ${formatDateTr(doc.dueDate!)}' : ''}',

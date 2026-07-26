@@ -240,11 +240,48 @@ için önceki konuşma geçmişine ya da veritabanına bak):
 `muhasebeci.demo@example.com` (accountant), `mukellef.demo@example.com`
 (client).
 
-**Kalan adımlar:**
-1. Herhangi bir belge gönderip (vade tarihi fark etmez) telefonda anlık
-   "Belge Geldi" bildiriminin göründüğünü doğrulamak (bu oturumda eklendi,
-   `on-document-insert` deploy edildi ama cihazda henüz test edilmedi).
-2. Vadesi ileri tarihli bir belge gönderip (test için
-   `C:\Projects\Flutter\Pdf\Tahakkuk_KDV1_test_future_20260820.pdf` — vade
-   20/08/2026 — kullanılabilir) telefonda vade tarihine yakın saatte vade
-   hatırlatma bildiriminin de ayrıca göründüğünü doğrulamak.
+Anlık "Belge Geldi" bildirimi gerçek Samsung A51 cihazında uçtan uca
+doğrulandı (uygulama tamamen kapalıyken de geliyor). Yolda iki gerçek bug
+bulunup düzeltildi: (1) arka plan handler'ı `requestNotificationsPermission()`
+çağırıyordu, Activity olmayan headless isolate'te bu native
+`NullPointerException` fırlatıp `init()`'i (dolayısıyla bildirimi) hiç
+göstermeden patlatıyordu — arka planda izin isteği artık atlanıyor
+(`init(requestPermission: false)`). (2) arka plan handler'ı hiç
+`tz_data.initializeTimeZones()` çağırmıyordu (yalnızca `bootstrap()`
+çağırıyor, o da bu isolate'te hiç çalışmıyor) — bu yüzden ödeme
+belgelerinde vade hatırlatması arka planda hiç planlanamıyordu
+(`LateInitializationError`). Ayrıca `tz.setLocalLocation(...)` hiç
+çağrılmadığından tüm hatırlatmalar UTC varsayılanıyla (Türkiye'den 3 saat
+geç, örn. 09:00 yerine 12:00) planlanıyordu — `Europe/Istanbul` sabitlendi.
+Vade alarmının doğru saatte (09:00) kurulduğu `adb shell dumpsys alarm` ile
+doğrulandı.
+
+Ödemeler/Bilgilendirme/Takvim kartlarında okunmadı göstergesi eklendi
+(`payment_list_tile.dart`, `info_screen.dart`) — `seen_at`/`seenAt` verisi
+zaten vardı (yalnızca üstteki zarf ikonunun sayacında kullanılıyordu), yeni
+migration gerekmedi.
+
+**Kalan adım:** Bu gece/yarın saat 00:00 ve 09:00'da vade hatırlatma
+alarmının (ses/titreşimle) gerçekten geldiğini doğrulamak (ayar: 1 gün
+önce + saat 0 olarak test için değiştirildi, sonra varsayılana
+döndürülmeli — `defaultReminderHour = 9`, `defaultReminderDaysBefore = 1`,
+`settings_repository.dart`).
+
+## Yapılabilir geliştirmeler (henüz yapılmadı, istenirse eklenebilir)
+
+1. **Vade bildirimini gerçek bir alarm gibi güçlendirme**:
+   `flutter_local_notifications`'ın `AndroidNotificationDetails` sınıfı
+   `fullScreenIntent: true`, `category: AndroidNotificationCategory.alarm`,
+   `importance: Importance.max`, `priority: Priority.max`,
+   `audioAttributesUsage: AudioAttributesUsage.alarm` destekliyor (paket
+   zaten kurulu, hiçbiri şu an kullanılmıyor) — bu, vade bildirimini yüksek
+   sesli/tam ekran bir alarm gibi gösterir, vade tarihine otomatik kurulur
+   (kullanıcı hiçbir şey yapmaz). Android'in kendi Saat/Alarm uygulamasına
+   gerçek bir kayıt eklemek (`AlarmClock.ACTION_SET_ALARM` intent'i) teknik
+   olarak uygun değil — yalnızca saat:dakika destekliyor (belirli bir tarih
+   seçilemiyor) ve `EXTRA_SKIP_UI` çoğu OEM'de (özellikle Samsung) yok
+   sayıldığından kullanıcının her seferinde elle onaylaması gerekiyor, o
+   yüzden ileri tarihli vade hatırlatması için anlamsız. Full-screen-intent
+   yaklaşımı için `AndroidManifest.xml`'e `USE_FULL_SCREEN_INTENT` izni
+   eklenmeli; Android 14+ (API 34+) bu izni normal uygulamalara otomatik
+   vermiyor, kullanıcının Ayarlar'dan bir kere elle açması gerekebilir.
