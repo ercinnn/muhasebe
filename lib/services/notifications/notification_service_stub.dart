@@ -6,7 +6,7 @@ import 'notification_service.dart';
 /// handled separately (WebNotificationService, Faz 7).
 class NotificationServiceImpl implements NotificationService {
   @override
-  Future<void> init() async {}
+  Future<void> init({bool requestPermission = true}) async {}
 
   @override
   Future<void> showNewDocumentNotification({

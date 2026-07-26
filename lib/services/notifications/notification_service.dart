@@ -9,7 +9,13 @@ export 'notification_service_stub.dart' if (dart.library.io) 'notification_servi
 /// this interface. Mobile (notification_service_mobile.dart) schedules
 /// due-1-day/due-day local alarms at 09:00 via flutter_local_notifications.
 abstract class NotificationService {
-  Future<void> init();
+  /// [requestPermission] must be false when called from a background/headless
+  /// context (the FCM background isolate handler) — there's no Activity there
+  /// to show the permission dialog, and asking anyway throws a
+  /// NullPointerException inside flutter_local_notifications
+  /// (ContextCompat.checkSelfPermission needs a non-null Activity), which
+  /// would abort init() before any notification gets shown.
+  Future<void> init({bool requestPermission = true});
 
   /// Shows an immediate "Belge Geldi" notification for a newly uploaded
   /// document — unlike [scheduleReminder], this fires right away instead of

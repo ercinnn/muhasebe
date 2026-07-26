@@ -18,12 +18,13 @@ class NotificationServiceImpl implements NotificationService {
   final _plugin = FlutterLocalNotificationsPlugin();
 
   @override
-  Future<void> init() async {
+  Future<void> init({bool requestPermission = true}) async {
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings();
     await _plugin.initialize(
       settings: const InitializationSettings(android: androidInit, iOS: iosInit),
     );
+    if (!requestPermission) return;
     await _plugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();

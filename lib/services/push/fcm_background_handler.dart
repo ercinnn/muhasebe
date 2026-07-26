@@ -17,7 +17,7 @@ Future<void> fcmBackgroundMessageHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   final service = NotificationServiceImpl();
-  await service.init();
+  await service.init(requestPermission: false);
   await service.showNewDocumentNotification(
     documentId: payload.documentId,
     docType: payload.docType,
