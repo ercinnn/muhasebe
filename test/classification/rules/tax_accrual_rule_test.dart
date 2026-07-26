@@ -39,6 +39,11 @@ void main() {
     });
   });
 
+  test('individual taxpayer combines ADI + SOYADI (ÜNVANI) into personName', () {
+    final doc = rule.extract(individualKdvTaxAccrualText);
+    expect(doc.personName, 'ERÇİN ÇAKALOĞLU');
+  });
+
   test('KDV tevkifatı, geçici vergi doc types resolve correctly', () {
     expect(rule.extract(multiRowTaxAccrualText).docType, DocType.kdv2);
     expect(rule.extract(geciciVergiTaxAccrualText).docType, DocType.geciciVergi);

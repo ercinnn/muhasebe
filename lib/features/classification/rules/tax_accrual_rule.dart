@@ -32,7 +32,7 @@ class TaxAccrualRule implements ClassificationRule {
 
     final personName = combineName(
       extractLineStartValue(rawText, 'ADI'),
-      extractLineStartValue(rawText, 'SOYADI (UNVANI)'),
+      extractLineStartValue(rawText, 'SOYADI (ÜNVANI)'),
     );
     final period = extractTaxPeriod(rawText);
     final amount = extractAmountFromLabelLine(rawText, 'TOPLAM');

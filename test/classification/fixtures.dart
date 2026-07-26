@@ -13,7 +13,7 @@ T.C
 HAZİNE VE MALİYE BAKANLIĞI
 İSTANBUL
 VERGİ KİMLİK NUMARASI 1234567890 ( T.C. Kimlik No )
-SOYADI (UNVANI) YILMAZ TİCARET LTD. ŞTİ.
+SOYADI (ÜNVANI) YILMAZ TİCARET LTD. ŞTİ.
 ADI -
 Kabul Tarihi Vergilendirme Dönemi Düzenleme
 Tarihi
@@ -46,13 +46,56 @@ YALNIZ BİN DOKUZYÜZOTUZDOKUZ TL YETMİŞ Kr .dir
 İLİ DEFTERDARLIĞI
 ''';
 
+// Individual (gerçek kişi) taxpayer: unlike the corporate fixtures above,
+// ADI carries a real first name rather than "-", so personName must combine
+// it with SOYADI (ÜNVANI) — modeled on a real sample (Tahakkuk_KDV1_64349871.pdf).
+const individualKdvTaxAccrualText = '''
+TAHAKKUK FİŞİ
+T.C
+HAZİNE VE MALİYE BAKANLIĞI
+AYDIN
+VERGİ KİMLİK NUMARASI 2200610719 ( T.C. Kimlik No )
+SOYADI (ÜNVANI) ÇAKALOĞLU
+ADI ERÇİN
+Kabul Tarihi Vergilendirme Dönemi Düzenleme
+Tarihi
+Ana Vergi Kodu 0015
+GERÇEK USULDE KATMA DEĞER VERGİSİ
+25/07/2026 06/2026-06/2026 25/07/2026
+MAKİNA NO
+DİDİM
+SIRA NO
+ADRES
+EFELER MAH. BATI CAD.
+Kapı No:91 Daire No:9 Tel:
+ DİDİM AYDIN
+2026072501Y7m0000046
+VADESİ ÖDENECEK
+OLAN
+MAHSUP
+EDİLEN
+TAHAKKUK
+EDEN
+ORAN
+TÜRÜ MATRAH
+0015 KDV 0,00 0,00 643.019,86 0,00 28/07/2026
+1048 5035 0,00 791,00 0,00 791,00 28/07/2026
+TOPLAM 791,00
+İşlem Türü 0010
+Thk Türü 9000
+YALNIZ YediYüzDoksanBirTL
+009281 VERGİ DAİRESİ MÜDÜRLÜĞÜ
+2200610719
+İLİ DEFTERDARLIĞI
+''';
+
 const mahsupTaxAccrualText = '''
 TAHAKKUK FİŞİ
 T.C
 HAZİNE VE MALİYE BAKANLIĞI
 İSTANBUL
 VERGİ KİMLİK NUMARASI 9876543210 ( T.C. Kimlik No )
-SOYADI (UNVANI) DEMIR YAPI A.Ş.
+SOYADI (ÜNVANI) DEMIR YAPI A.Ş.
 ADI -
 Kabul Tarihi Vergilendirme Dönemi Düzenleme
 Tarihi
@@ -91,7 +134,7 @@ T.C
 HAZİNE VE MALİYE BAKANLIĞI
 İSTANBUL
 VERGİ KİMLİK NUMARASI 1122334455 ( T.C. Kimlik No )
-SOYADI (UNVANI) KAYA İNŞAAT LTD. ŞTİ.
+SOYADI (ÜNVANI) KAYA İNŞAAT LTD. ŞTİ.
 ADI -
 Kabul Tarihi Vergilendirme Dönemi Düzenleme
 Tarihi
@@ -128,7 +171,7 @@ T.C
 HAZİNE VE MALİYE BAKANLIĞI
 İSTANBUL
 VERGİ KİMLİK NUMARASI 6677889900 ( T.C. Kimlik No )
-SOYADI (UNVANI) OZTURK GIDA A.Ş.
+SOYADI (ÜNVANI) OZTURK GIDA A.Ş.
 ADI -
 Kabul Tarihi Vergilendirme Dönemi Düzenleme
 Tarihi
@@ -170,7 +213,7 @@ T.C
 HAZİNE VE MALİYE BAKANLIĞI
 İSTANBUL
 VERGİ KİMLİK NUMARASI 5544332211 ( T.C. Kimlik No )
-SOYADI (UNVANI) AK PLASTİK SAN. TİC. LTD. ŞTİ.
+SOYADI (ÜNVANI) AK PLASTİK SAN. TİC. LTD. ŞTİ.
 ADI -
 Kabul Tarihi Vergilendirme Dönemi Düzenleme
 Tarihi

@@ -4,6 +4,12 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- Android 13+ (API 33+) requires this to be declared before any
+         runtime notification-permission request (flutter_local_notifications'
+         requestNotificationsPermission(), FirebaseMessaging.requestPermission())
+         can succeed — without it every notification, scheduled or FCM-shown,
+         is silently suppressed even if the app never surfaces an error. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="muhasebe_takip"
         android:name="${applicationName}"
