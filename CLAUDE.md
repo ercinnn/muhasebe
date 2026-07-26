@@ -217,11 +217,7 @@ düzeltildi — trigger'ın attığı webhook isteği gateway'de `401
 UNAUTHORIZED_NO_AUTH_HEADER` ile reddediliyordu (bkz. "Önemli gotcha'lar" —
 `verify_jwt = false` fix'i, `supabase/config.toml`). Düzeltme sonrası yeni
 bir belge gönderiminde `net._http_response` `{"sent":1}` / status 200
-döndürdüğü doğrulandı. Anlık "Belge Geldi" bildirimi de eklendi ve deploy
-edildi (bkz. ilgili gotcha) — artık her yeni belgede (kategori fark etmez)
-push geldiği anda görünür bir bildirim çıkıyor, `payment` + `due_date`
-dolu belgelerde ayrıca vade-1 gün/vade günü yerel alarmı da planlanıyor.
-Gerçek cihazda henüz uçtan uca doğrulanmadı (bkz. "Kalan adım").
+döndürdüğü doğrulandı.
 
 Proje GitHub'a taşındı (`ercinnn/muhasebe`, public) ve web build GitHub
 Pages'te yayında (`https://ercinnn.github.io/muhasebe/`, manuel deploy —
@@ -238,50 +234,58 @@ giriş/işten ayrılış bildirgelerinde isim çıkarımı sağlam, tarih alanla
 Test hesapları (Supabase `auth.users`, şifreler sıfırlandı — güncel şifre
 için önceki konuşma geçmişine ya da veritabanına bak):
 `muhasebeci.demo@example.com` (accountant), `mukellef.demo@example.com`
-(client).
+(client). Gerçek cihaz testleri ayrıca kişisel hesaplarla da yapıldı
+(`cakalogluercin86@gmail.com` mükellef).
 
-Anlık "Belge Geldi" bildirimi gerçek Samsung A51 cihazında uçtan uca
-doğrulandı (uygulama tamamen kapalıyken de geliyor). Yolda iki gerçek bug
-bulunup düzeltildi: (1) arka plan handler'ı `requestNotificationsPermission()`
-çağırıyordu, Activity olmayan headless isolate'te bu native
-`NullPointerException` fırlatıp `init()`'i (dolayısıyla bildirimi) hiç
-göstermeden patlatıyordu — arka planda izin isteği artık atlanıyor
-(`init(requestPermission: false)`). (2) arka plan handler'ı hiç
-`tz_data.initializeTimeZones()` çağırmıyordu (yalnızca `bootstrap()`
-çağırıyor, o da bu isolate'te hiç çalışmıyor) — bu yüzden ödeme
-belgelerinde vade hatırlatması arka planda hiç planlanamıyordu
-(`LateInitializationError`). Ayrıca `tz.setLocalLocation(...)` hiç
-çağrılmadığından tüm hatırlatmalar UTC varsayılanıyla (Türkiye'den 3 saat
-geç, örn. 09:00 yerine 12:00) planlanıyordu — `Europe/Istanbul` sabitlendi.
-Vade alarmının doğru saatte (09:00) kurulduğu `adb shell dumpsys alarm` ile
-doğrulandı.
+Anlık "Belge Geldi" bildirimi eklendi ve gerçek Samsung A51 cihazında
+uçtan uca doğrulandı — uygulama tamamen kapalıyken de (recents'ten
+kaydırarak kapatılmış halde) geliyor; artık her yeni belgede (kategori
+fark etmez) push geldiği anda görünür bir bildirim çıkıyor. Yolda iki
+gerçek arka-plan bug'ı bulunup düzeltildi:
+1. Arka plan handler'ı `requestNotificationsPermission()` çağırıyordu,
+   Activity olmayan headless isolate'te bu native `NullPointerException`
+   fırlatıp `init()`'i (dolayısıyla bildirimi) hiç göstermeden
+   patlatıyordu — arka planda izin isteği artık atlanıyor
+   (`init(requestPermission: false)`).
+2. Arka plan handler'ı hiç `tz_data.initializeTimeZones()` çağırmıyordu
+   (yalnızca `bootstrap()` çağırıyor, o da bu isolate'te hiç çalışmıyor)
+   — bu yüzden ödeme belgelerinde vade hatırlatması arka planda hiç
+   planlanamıyordu (`LateInitializationError`). Ayrıca
+   `tz.setLocalLocation(...)` hiç çağrılmadığından tüm hatırlatmalar UTC
+   varsayılanıyla (Türkiye'den 3 saat geç, örn. 09:00 yerine 12:00)
+   planlanıyordu — `Europe/Istanbul` sabitlendi. Vade alarmının doğru
+   saatte (09:00) kurulduğu `adb shell dumpsys alarm` ile doğrulandı.
+
+Vade hatırlatması artık **alarm-stili** bir bildirim: yeni bir kanal
+(`payment_reminders_v2` — `_v1` kanalı bazı cihazlarda daha önceki
+testlerden sessiz kalmış haliyle kalıcı olarak kilitlendiği için kanal
+id'si bilerek değiştirildi), `Importance.max`, `Priority.max`,
+`AndroidNotificationCategory.alarm`, `fullScreenIntent: true`, alarm ses
+kanalı (`AudioAttributesUsage.alarm`) — `AndroidManifest.xml`'e
+`USE_FULL_SCREEN_INTENT` izni eklendi. Android 14+'ta bu izin otomatik
+gelmeyebilir, gerekirse Ayarlar → Uygulamalar → Özel erişim → Tam ekran
+bildirimler'den elle açılmalı (bkz. "Kalan adım").
 
 Ödemeler/Bilgilendirme/Takvim kartlarında okunmadı göstergesi eklendi
 (`payment_list_tile.dart`, `info_screen.dart`) — `seen_at`/`seenAt` verisi
 zaten vardı (yalnızca üstteki zarf ikonunun sayacında kullanılıyordu), yeni
 migration gerekmedi.
 
-**Kalan adım:** Bu gece/yarın saat 00:00 ve 09:00'da vade hatırlatma
-alarmının (ses/titreşimle) gerçekten geldiğini doğrulamak (ayar: 1 gün
-önce + saat 0 olarak test için değiştirildi, sonra varsayılana
-döndürülmeli — `defaultReminderHour = 9`, `defaultReminderDaysBefore = 1`,
-`settings_repository.dart`).
+**Kalan adım:** Yeni `payment_reminders_v2` kanalıyla vade hatırlatmasının
+gerçekten sesli/tam ekran geldiğini doğrulamak — önceki testte (eski kanal
+ile, gece 00:00'da) bildirim sessiz gelmişti, sebebi ya eski kanalın kilitli
+sessiz ayarı ya da telefonun o saatteki Rahatsız Etmeyin/Gece modu olabilir,
+netleşmedi. Ayrıca reminder ayarları (days before = 1, hour = 0) test için
+değiştirildi, doğrulama sonrası varsayılana (`defaultReminderHour = 9`,
+`defaultReminderDaysBefore = 1`, `settings_repository.dart`) döndürülmeli.
 
 ## Yapılabilir geliştirmeler (henüz yapılmadı, istenirse eklenebilir)
 
-1. **Vade bildirimini gerçek bir alarm gibi güçlendirme**:
-   `flutter_local_notifications`'ın `AndroidNotificationDetails` sınıfı
-   `fullScreenIntent: true`, `category: AndroidNotificationCategory.alarm`,
-   `importance: Importance.max`, `priority: Priority.max`,
-   `audioAttributesUsage: AudioAttributesUsage.alarm` destekliyor (paket
-   zaten kurulu, hiçbiri şu an kullanılmıyor) — bu, vade bildirimini yüksek
-   sesli/tam ekran bir alarm gibi gösterir, vade tarihine otomatik kurulur
-   (kullanıcı hiçbir şey yapmaz). Android'in kendi Saat/Alarm uygulamasına
-   gerçek bir kayıt eklemek (`AlarmClock.ACTION_SET_ALARM` intent'i) teknik
-   olarak uygun değil — yalnızca saat:dakika destekliyor (belirli bir tarih
-   seçilemiyor) ve `EXTRA_SKIP_UI` çoğu OEM'de (özellikle Samsung) yok
-   sayıldığından kullanıcının her seferinde elle onaylaması gerekiyor, o
-   yüzden ileri tarihli vade hatırlatması için anlamsız. Full-screen-intent
-   yaklaşımı için `AndroidManifest.xml`'e `USE_FULL_SCREEN_INTENT` izni
-   eklenmeli; Android 14+ (API 34+) bu izni normal uygulamalara otomatik
-   vermiyor, kullanıcının Ayarlar'dan bir kere elle açması gerekebilir.
+1. **Projeyi farklı bir muhasebe firması için ikinci, bağımsız bir kurulum
+   olarak çoğaltma** (ayrı Supabase projesi, ayrı Firebase projesi, ayrı
+   GitHub reposu — paylaşımlı veri yok): app id/isim/ikon değişikliği +
+   yeni Supabase projesine migration'ları uygulama + `flutterfire configure`
+   ile yeni Firebase projesi bağlama + `env/dev.json` ve web deploy
+   `--base-href`'i güncelleme. Bu konsollara (Supabase/Firebase/GitHub)
+   giriş kullanıcının kendi hesabıyla yapılması gerekiyor, kod tarafı
+   zaten büyük ölçüde ortam-bağımsız (`Env` sınıfı, `--dart-define-from-file`).
