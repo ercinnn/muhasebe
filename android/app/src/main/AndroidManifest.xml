@@ -10,6 +10,11 @@
          can succeed — without it every notification, scheduled or FCM-shown,
          is silently suppressed even if the app never surfaces an error. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Vade hatırlatmasını alarm gibi (tam ekran) göstermek için —
+         Android 14+ (API 34+) bu izni normal uygulamalara otomatik
+         vermeyebilir; gerekirse Ayarlar > Uygulamalar > Özel erişim >
+         Tam ekran bildirimler'den elle açılmalı. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
     <application
         android:label="muhasebe_takip"
         android:name="${applicationName}"

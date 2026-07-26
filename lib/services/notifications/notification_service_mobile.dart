@@ -7,8 +7,12 @@ import '../../features/documents/domain/document_record.dart';
 import '../../features/settings/data/settings_repository.dart';
 import 'notification_service.dart';
 
-const _channelId = 'payment_reminders';
-const _channelName = 'Ödeme Hatırlatmaları';
+// _v2: Android notification channels are immutable after first creation —
+// bumping the id forces a fresh channel with the alarm-style settings below
+// (the original 'payment_reminders' channel got created silently on some
+// devices during earlier testing and can't be fixed in place).
+const _channelId = 'payment_reminders_v2';
+const _channelName = 'Vade Hatırlatmaları (Alarm)';
 const _newDocChannelId = 'new_document';
 const _newDocChannelName = 'Yeni Belge Bildirimleri';
 
@@ -106,8 +110,16 @@ class NotificationServiceImpl implements NotificationService {
       body: body,
       scheduledDate: scheduled,
       notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(_channelId, _channelName),
-        iOS: DarwinNotificationDetails(),
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          importance: Importance.max,
+          priority: Priority.max,
+          category: AndroidNotificationCategory.alarm,
+          fullScreenIntent: true,
+          audioAttributesUsage: AudioAttributesUsage.alarm,
+        ),
+        iOS: DarwinNotificationDetails(interruptionLevel: InterruptionLevel.timeSensitive),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
