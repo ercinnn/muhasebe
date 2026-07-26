@@ -6,6 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 import 'core/config/env.dart';
 import 'firebase_options.dart';
@@ -20,6 +21,10 @@ Future<void> bootstrap() async {
   Env.assertConfigured();
 
   tz_data.initializeTimeZones();
+  // The `timezone` package defaults tz.local to UTC otherwise — this app is
+  // Turkey-only (see the hardcoded 'tr_TR' locale below), so hardcode the
+  // location rather than pull in a device-timezone-detection plugin.
+  tz.setLocalLocation(tz.getLocation('Europe/Istanbul'));
   await initializeDateFormatting('tr_TR');
   await pdfrxFlutterInitialize();
 
