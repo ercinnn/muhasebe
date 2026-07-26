@@ -101,7 +101,13 @@ async function sendFcmMessage(
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ message: { token, data } }),
+      // android.priority: "high" is required for data-only messages to be
+      // delivered promptly — without it FCM may defer delivery while the
+      // device is in Doze/App Standby, which is most of the time for an
+      // app that's not in the foreground.
+      body: JSON.stringify({
+        message: { token, data, android: { priority: "high" } },
+      }),
     },
   );
 
