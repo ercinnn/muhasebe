@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/document_enums.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/animated_counter.dart';
+import '../../../../core/widgets/glass_card.dart';
 import '../../application/inbox_summary.dart';
 import '../../data/documents_repository.dart';
+import '../widgets/empty_state_celebration.dart';
 import '../widgets/payment_list_tile.dart';
 
 class PaymentsScreen extends ConsumerWidget {
@@ -27,10 +30,14 @@ class PaymentsScreen extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: _TotalDueHeroCard(summary: summary),
+            ),
             if (summary.upcomingCount > 0) _UpcomingPaymentsBanner(summary: summary),
             Expanded(
-              child: payments.isEmpty
-                  ? const Center(child: Text('Ödeme bulunmuyor'))
+              child: summary.pendingCount == 0
+                  ? const EmptyStateCelebration()
                   : ListView.separated(
                       padding: const EdgeInsets.all(16),
                       itemCount: payments.length,
@@ -43,6 +50,41 @@ class PaymentsScreen extends ConsumerWidget {
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('Hata: $error')),
+    );
+  }
+}
+
+class _TotalDueHeroCard extends StatelessWidget {
+  const _TotalDueHeroCard({required this.summary});
+
+  final InboxSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Toplam Bekleyen Tutar',
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: Colors.black54, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          AnimatedCounter(
+            value: summary.pendingTotal,
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.black87),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${summary.pendingCount} bekleyen ödeme',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+          ),
+        ],
+      ),
     );
   }
 }

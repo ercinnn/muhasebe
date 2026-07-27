@@ -22,6 +22,7 @@ class AdaptiveScaffold extends StatelessWidget {
     required this.body,
     this.appBar,
     this.railTrailing,
+    this.backgroundColor,
   });
 
   final List<AdaptiveDestination> destinations;
@@ -31,12 +32,18 @@ class AdaptiveScaffold extends StatelessWidget {
   final PreferredSizeWidget? appBar;
   final Widget? railTrailing;
 
+  /// Left null, `Scaffold` uses its normal opaque default — pass e.g.
+  /// `Colors.transparent` when [body] already paints its own background
+  /// (a gradient wrapper).
+  final Color? backgroundColor;
+
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.sizeOf(context).width >= Breakpoints.rail;
 
     if (isWide) {
       return Scaffold(
+        backgroundColor: backgroundColor,
         appBar: appBar,
         body: Row(
           children: [
@@ -62,6 +69,7 @@ class AdaptiveScaffold extends StatelessWidget {
     }
 
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: appBar,
       body: body,
       bottomNavigationBar: NavigationBar(

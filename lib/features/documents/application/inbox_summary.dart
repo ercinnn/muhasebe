@@ -14,11 +14,18 @@ class InboxSummary {
     required this.unreadCount,
     required this.upcomingCount,
     required this.upcomingTotal,
+    required this.pendingCount,
+    required this.pendingTotal,
   });
 
   final int unreadCount;
   final int upcomingCount;
   final double upcomingTotal;
+
+  /// All pending payments regardless of due date — distinct from
+  /// [upcomingTotal], which only sums the 7-day window shown in the banner.
+  final int pendingCount;
+  final double pendingTotal;
 }
 
 @riverpod
@@ -27,19 +34,19 @@ InboxSummary inboxSummary(Ref ref) {
 
   final unreadCount = docs.where((d) => d.seenAt == null).length;
 
-  final upcoming = docs.where(
-    (d) =>
-        d.category == DocumentCategory.payment &&
-        d.status == DocumentStatus.pending &&
-        d.dueDate != null &&
-        daysUntil(d.dueDate!) <= 7,
+  final pending = docs.where(
+    (d) => d.category == DocumentCategory.payment && d.status == DocumentStatus.pending,
   );
+  final pendingTotal = pending.fold<double>(0, (sum, d) => sum + (d.amount ?? 0));
 
+  final upcoming = pending.where((d) => d.dueDate != null && daysUntil(d.dueDate!) <= 7);
   final upcomingTotal = upcoming.fold<double>(0, (sum, d) => sum + (d.amount ?? 0));
 
   return InboxSummary(
     unreadCount: unreadCount,
     upcomingCount: upcoming.length,
     upcomingTotal: upcomingTotal,
+    pendingCount: pending.length,
+    pendingTotal: pendingTotal,
   );
 }

@@ -34,7 +34,7 @@ final class PasswordResetControllerProvider
 }
 
 String _$passwordResetControllerHash() =>
-    r'4387c62da4a52e0b7476d3261344c8ebca216300';
+    r'eab65c811691b721dc204d7a870ac87a2b30162c';
 
 abstract class _$PasswordResetController extends $AsyncNotifier<void> {
   FutureOr<void> build();

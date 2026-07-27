@@ -54,6 +54,9 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   uuid: ^4.6.0
+  flutter_animate: ^4.5.2
+  flutter_slidable: ^4.0.2
+  confetti: ^0.8.0
 
 dev_dependencies:
   flutter_test:

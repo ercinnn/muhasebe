@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/document_enums.dart';
+import '../../../../core/theme/glass_theme.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/glass_surface.dart';
 import '../../data/documents_repository.dart';
 
 class InfoScreen extends ConsumerWidget {
@@ -30,29 +32,57 @@ class InfoScreen extends ConsumerWidget {
             final doc = infoDocs[index];
             final isUnread = doc.seenAt == null;
             final scheme = Theme.of(context).colorScheme;
-            return Card(
-              color: isUnread ? scheme.primaryContainer.withValues(alpha: 0.35) : null,
-              child: ListTile(
+            return GlassSurface(
+              padding: EdgeInsets.zero,
+              tint: isUnread ? scheme.primaryContainer.withValues(alpha: 0.25) : null,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(GlassStyle.surfaceRadius),
                 onTap: () => context.push('/document/${doc.id}'),
-                leading: Icon(
-                  doc.docType == DocType.iseGiris ? Icons.person_add_alt_1 : Icons.person_remove,
-                ),
-                title: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      doc.personName ?? 'İsimsiz',
-                      style: TextStyle(fontWeight: isUnread ? FontWeight.bold : null),
-                    ),
-                    if (isUnread) ...[
-                      const SizedBox(width: 6),
-                      Icon(Icons.circle, size: 8, color: scheme.primary),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: urgencyNeutral.withValues(alpha: 0.15),
+                        child: Icon(
+                          doc.docType == DocType.iseGiris
+                              ? Icons.person_add_alt_1
+                              : Icons.person_remove,
+                          color: urgencyNeutral,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    doc.personName ?? 'İsimsiz',
+                                    style: TextStyle(
+                                      fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                if (isUnread) ...[
+                                  const SizedBox(width: 6),
+                                  Icon(Icons.circle, size: 8, color: scheme.primary),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${doc.docType.label}'
+                              '${doc.dueDate != null ? ' • ${formatDateTr(doc.dueDate!)}' : ''}',
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
-                  ],
-                ),
-                subtitle: Text(
-                  '${doc.docType.label}'
-                  '${doc.dueDate != null ? ' • ${formatDateTr(doc.dueDate!)}' : ''}',
+                  ),
                 ),
               ),
             );

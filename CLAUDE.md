@@ -112,7 +112,13 @@ release build'i reddeder.
 - **Riverpod keepAlive** — provider async iş bitene kadar veya uzun ömürlü
   stream/listener tutuyorsa `@Riverpod(keepAlive: true)` olmalı, aksi halde
   autodispose provider'da "Cannot use the Ref after it has been disposed"
-  hatası çıkar (bkz. `fcmServiceProvider`).
+  hatası çıkar (bkz. `fcmServiceProvider`). İkinci somut örnek:
+  `documentActionsProvider` — hiçbir widget'ta `ref.watch` edilmiyor, sadece
+  `onPressed` içinde anlık `ref.read(...).notifier` ile çağrılıyordu; birden
+  fazla `await`'li `markPaid()` çalışırken provider disposed oluyor ve
+  hata sessizce yutuluyordu (belge detayındaki "Ödendi" butonu asla
+  güncellenmiyordu, sadece ekrandan çıkıp girince düzeliyordu — gerçek
+  cihazda glass-restyle testi sırasında bulundu). `keepAlive: true` çözdü.
 - **Realtime**: `documents` tablosu `supabase_realtime` publication'a
   eklenmeli (`alter publication supabase_realtime add table public.documents;`)
   yoksa `.stream()` `RealtimeSubscribeException` fırlatır.
@@ -216,6 +222,17 @@ bildirim geliyor.
 cihazında, `muhasebetakip://` deep link ile) uçtan uca doğrulandı —
 gerçek şifre değişikliği + yeni şifreyle giriş dahil (2026-07-28). Bkz.
 PKCE code_verifier gotcha'sı.
+
+Mükellef ekranları (Ödemeler/Takvim/Bilgilendirme) Glassmorphism'e
+geçirildi: `lib/core/theme/glass_theme.dart` + `lib/core/widgets/glass_*`
+paylaşımlı bileşenler, gradient arka plan, toplam bekleyen tutar hero
+kartı, mikro etkileşimler (kaydırma aksiyonları, "Ödendi" onay animasyonu +
+titreşim, vade yaklaşınca nabız efekti, tüm ödemeler bitince confetti).
+Gerçek cihazda (Samsung A51) hem kaydırma performansı hem tüm
+etkileşimler doğrulandı (2026-07-28). Muhasebeci ekranları (Mükelleflerim/
+Belge Yükle/Gönderilenler) bilinçli olarak kapsam dışı bırakıldı — ayrı bir
+iş. `ShakeWrapper` hazır ama henüz hiçbir yerde kullanılmıyor (doğal hedefi
+`upload_draft_card.dart`'ın hata satırı, bkz. dosyadaki not).
 
 Sınıflandırma motoru gerçek GİB/SGK belgeleriyle doğrulandı (bkz.
 gotcha'lar). SGK işe giriş/işten ayrılış tarih alanları tek örnekle test

@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
 
 class App extends ConsumerWidget {
   const App({super.key});
@@ -14,7 +15,7 @@ class App extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Belge Takip',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
+      theme: buildAppTheme(),
       routerConfig: router,
       locale: const Locale('tr', 'TR'),
       supportedLocales: const [Locale('tr', 'TR')],

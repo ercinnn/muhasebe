@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../../core/constants/document_enums.dart';
+import '../../../../core/theme/glass_theme.dart';
 import '../../data/documents_repository.dart';
 import '../../domain/document_record.dart';
 import '../widgets/due_status.dart';
@@ -28,11 +29,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   Color _markerColor(List<DocumentRecord> dayDocs) {
     final urgencies = dayDocs.map(DueStatus.of).map((s) => s.urgency);
-    if (urgencies.contains(DueUrgency.overdue)) return Colors.red.shade700;
+    if (urgencies.contains(DueUrgency.overdue)) return urgencyOverdue;
     if (urgencies.any((u) => u == DueUrgency.soon || u == DueUrgency.upcoming)) {
-      return Colors.orange.shade800;
+      return urgencySoon;
     }
-    return Colors.green;
+    return urgencyPaid;
   }
 
   @override

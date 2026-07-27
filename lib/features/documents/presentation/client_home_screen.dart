@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/adaptive_scaffold.dart';
+import '../../../core/widgets/gradient_background.dart';
 import '../../../services/notifications/notification_providers.dart';
 import '../../../services/push/fcm_service.dart';
 import '../../auth/application/auth_controller.dart';
@@ -78,8 +79,11 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       destinations: _destinations,
       selectedIndex: _index,
       onDestinationSelected: (i) => setState(() => _index = i),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(_titles[_index]),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -96,12 +100,14 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
           ),
         ],
       ),
-      body: switch (_index) {
-        0 => const PaymentsScreen(),
-        1 => const CalendarScreen(),
-        2 => const InfoScreen(),
-        _ => const SettingsScreen(),
-      },
+      body: GradientScaffoldBackground(
+        child: switch (_index) {
+          0 => const PaymentsScreen(),
+          1 => const CalendarScreen(),
+          2 => const InfoScreen(),
+          _ => const SettingsScreen(),
+        },
+      ),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/document_enums.dart';
+import '../../../../core/theme/glass_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/document_record.dart';
 
@@ -17,19 +18,19 @@ class DueStatus {
 
   static DueStatus of(DocumentRecord doc) {
     if (doc.status == DocumentStatus.paid) {
-      return const DueStatus(urgency: DueUrgency.paid, color: Colors.green, label: 'Ödendi');
+      return const DueStatus(urgency: DueUrgency.paid, color: urgencyPaid, label: 'Ödendi');
     }
     if (doc.status == DocumentStatus.noPayment) {
       return const DueStatus(
         urgency: DueUrgency.noPayment,
-        color: Colors.grey,
+        color: urgencyNeutral,
         label: 'Ödeme gerekmez',
       );
     }
     if (doc.status == DocumentStatus.info) {
       return const DueStatus(
         urgency: DueUrgency.info,
-        color: Colors.blueGrey,
+        color: urgencyNeutral,
         label: 'Bilgilendirme',
       );
     }
@@ -37,25 +38,25 @@ class DueStatus {
     if (due == null) {
       return const DueStatus(
         urgency: DueUrgency.unknown,
-        color: Colors.grey,
+        color: urgencyNeutral,
         label: 'Vade belirtilmemiş',
       );
     }
 
     final days = daysUntil(due);
     if (days < 0) {
-      return DueStatus(urgency: DueUrgency.overdue, color: Colors.red.shade700, label: 'Vadesi geçti');
+      return const DueStatus(urgency: DueUrgency.overdue, color: urgencyOverdue, label: 'Vadesi geçti');
     }
     if (days <= 3) {
       return DueStatus(
         urgency: DueUrgency.soon,
-        color: Colors.orange.shade800,
+        color: urgencySoon,
         label: days == 0 ? 'Bugün son gün' : '$days gün kaldı',
       );
     }
     return DueStatus(
       urgency: DueUrgency.upcoming,
-      color: Colors.blueGrey.shade700,
+      color: urgencyUpcoming,
       label: '$days gün kaldı',
     );
   }

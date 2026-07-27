@@ -70,6 +70,10 @@ class _StatusRow extends StatelessWidget {
   }
 }
 
+// Natural next call site for `core/widgets/shake_wrapper.dart`'s
+// shake+flash error feedback once the accountant-side screens get their own
+// glass-restyle pass — not wired yet (out of scope, see the glass-restyle
+// plan: client screens only in this pass).
 class _ErrorRow extends ConsumerWidget {
   const _ErrorRow({required this.draft});
 
