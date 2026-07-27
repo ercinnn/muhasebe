@@ -213,8 +213,9 @@ bildirim geliyor.
 (`seen_at`/`seenAt`, `payment_list_tile.dart` + `info_screen.dart`).
 
 Şifremi unuttum akışı eklendi ve hem web hem mobilde (gerçek Samsung A51
-cihazında, `muhasebetakip://` deep link ile) uçtan uca doğrulandı
-(2026-07-28) — bkz. PKCE code_verifier gotcha'sı.
+cihazında, `muhasebetakip://` deep link ile) uçtan uca doğrulandı —
+gerçek şifre değişikliği + yeni şifreyle giriş dahil (2026-07-28). Bkz.
+PKCE code_verifier gotcha'sı.
 
 Sınıflandırma motoru gerçek GİB/SGK belgeleriyle doğrulandı (bkz.
 gotcha'lar). SGK işe giriş/işten ayrılış tarih alanları tek örnekle test
