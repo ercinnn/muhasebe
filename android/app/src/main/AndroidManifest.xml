@@ -40,6 +40,17 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Şifre sıfırlama recovery linki için custom scheme deep link.
+                 Bir https App Link değil (assetlinks.json/domain doğrulaması
+                 gerekmez) — Supabase'in PKCE code_verifier'ı bu uygulamanın
+                 kendi local storage'ında saklandığından, recovery linkinin
+                 tarayıcı yerine doğrudan bu uygulamaya açılması gerekiyor. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="muhasebetakip"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

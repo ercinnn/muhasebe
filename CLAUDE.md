@@ -178,6 +178,20 @@ release build'i reddeder.
   `C:/Windows/Fonts/arial.ttf` gömülmeli (Identity-H/Unicode CMap). pdfrx
   metni content stream sırasına göre çıkarır (görsel pozisyona göre
   değil), yani fixture taklidi yaparken satır sırası yeterli, x/y önemsiz.
+- **Supabase PKCE code_verifier, isteği başlatan storage'a bağlı** —
+  `resetPasswordForEmail` çağrıldığı yerin (web origin'i ya da mobil
+  uygulamanın local storage'ı) dışında bir yerde recovery linkine
+  tıklanırsa `AuthException(Code verifier could not be found in local
+  storage)` ile sessizce başarısız olur (kullanıcı sadece o context'te
+  zaten var olan eski oturuma düşer, hata görmez). Bu yüzden mobilde
+  `password_reset_controller.dart`, `redirectTo`'yu web'de dinamik origin,
+  mobilde `muhasebetakip://reset-password` custom scheme olarak ayarlıyor
+  (AndroidManifest.xml intent-filter + iOS Info.plist
+  `CFBundleURLTypes`) — link her zaman isteği başlatan app/browser
+  context'ine geri döner. Supabase Dashboard → Authentication → URL
+  Configuration → Redirect URLs listesine `muhasebetakip://**` de
+  eklenmeli, yoksa aynı sessiz-fallback davranışı (bkz. Site URL gotcha'sı)
+  tekrarlanır.
 
 ## Durum
 
@@ -197,6 +211,10 @@ bildirim geliyor.
 
 Ödemeler/Bilgilendirme/Takvim kartlarında okunmadı göstergesi var
 (`seen_at`/`seenAt`, `payment_list_tile.dart` + `info_screen.dart`).
+
+Şifremi unuttum akışı eklendi ve hem web hem mobilde (gerçek Samsung A51
+cihazında, `muhasebetakip://` deep link ile) uçtan uca doğrulandı
+(2026-07-28) — bkz. PKCE code_verifier gotcha'sı.
 
 Sınıflandırma motoru gerçek GİB/SGK belgeleriyle doğrulandı (bkz.
 gotcha'lar). SGK işe giriş/işten ayrılış tarih alanları tek örnekle test

@@ -15,7 +15,7 @@ class PasswordResetController extends _$PasswordResetController {
     state = await AsyncValue.guard(
       () => ref
           .read(authRepositoryProvider)
-          .resetPasswordForEmail(email, redirectTo: _webRedirectTo),
+          .resetPasswordForEmail(email, redirectTo: _redirectTo),
     );
   }
 
@@ -26,10 +26,12 @@ class PasswordResetController extends _$PasswordResetController {
     );
   }
 
-  /// Mobile has no deep link registered yet, so the recovery link should
-  /// fall back to Supabase's configured Site URL there — only build a
-  /// redirect on web, and use the current origin so it keeps working after
-  /// a domain change with no code edit.
-  String? get _webRedirectTo =>
-      kIsWeb ? '${Uri.base.origin}${Uri.base.path}' : null;
+  /// Web: current origin, so it keeps working after a domain change with no
+  /// code edit. Mobile: a custom URL scheme (see AndroidManifest.xml /
+  /// Info.plist `muhasebetakip://`) rather than the site's https URL — the
+  /// PKCE code_verifier this exchange needs is stored in *this app's* local
+  /// storage, so the link must reopen this app, not a browser, or the
+  /// exchange fails with "Code verifier could not be found".
+  String get _redirectTo =>
+      kIsWeb ? '${Uri.base.origin}${Uri.base.path}' : 'muhasebetakip://reset-password';
 }
