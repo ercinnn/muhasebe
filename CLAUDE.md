@@ -76,15 +76,26 @@ planda yalnızca public repo'da çalışıyor). Web build **manuel** deploy
 ediliyor, CI/CD yok:
 
 ```
-flutter build web --dart-define-from-file=env/dev.json --base-href /muhasebe/
+flutter build web --dart-define-from-file=env/dev.json --base-href /
+echo tahakkukfisi.com > build/web/CNAME
 cd build/web && rm -rf .git && git init -q && git checkout -q -b gh-pages \
   && git add -A && git commit -q -m "Deploy web build" \
   && git remote add origin https://github.com/ercinnn/muhasebe.git \
   && git push -f origin gh-pages
 ```
 
-Canlı: `https://ercinnn.github.io/muhasebe/`. Kod her değiştiğinde bu adım
-tekrar çalıştırılmadıkça site eski kalır.
+Canlı: `https://tahakkukfisi.com/` (Cloudflare Registrar'dan alınan custom
+domain, GitHub Pages'e DNS ile bağlı — apex `CNAME` → `ercinnn.github.io`,
+`www` aynı şekilde, ikisi de Cloudflare'de "DNS only"/gri bulut).
+`https://ercinnn.github.io/muhasebe/` artık kullanılmıyor. Kod her
+değiştiğinde bu adım tekrar çalıştırılmadıkça site eski kalır.
+
+**gh-pages branch'i her deploy'da `rm -rf .git && git init` ile sıfırdan
+kuruluyor** — GitHub'ın custom domain için branch köküne yazdığı `CNAME`
+dosyası bu sıfırlamada silinir. `echo tahakkukfisi.com > build/web/CNAME`
+adımı bu yüzden deploy komutunun kalıcı bir parçası; atlanırsa bir sonraki
+deploy'da custom domain ayarı GitHub tarafında sessizce düşer (Settings →
+Pages'te tekrar boş görünür).
 
 Release APK proguard kuralı gerektiriyor (`android/app/proguard-rules.pro`
 + `build.gradle.kts`'teki `proguardFiles(...)`): `google_mlkit_text_recognition`
@@ -181,10 +192,8 @@ kapalıyken de), ödeme belgelerinde ayrıca vade-1 gün/vade günü hatırlatma
 planlanıyor — bu akıştaki arka-plan bug'ları (izin isteği crash'i,
 timezone init eksikliği) düzeltildi (bkz. gotcha'lar). Vade hatırlatması
 artık alarm-stili (`payment_reminders_v2` kanalı, tam ekran + alarm sesi +
-max önem) ama yeni kanalla henüz ses/tam ekranın gerçekten geldiği
-doğrulanmadı — **kalan adım budur**. Android 14+'ta `USE_FULL_SCREEN_INTENT`
-izni otomatik gelmeyebilir (Ayarlar → Uygulamalar → Özel erişim → Tam
-ekran bildirimler).
+max önem) — bu da gerçek cihazda doğrulandı (2026-07-27), sesli/tam ekran
+bildirim geliyor.
 
 Ödemeler/Bilgilendirme/Takvim kartlarında okunmadı göstergesi var
 (`seen_at`/`seenAt`, `payment_list_tile.dart` + `info_screen.dart`).
@@ -198,15 +207,8 @@ Test hesapları: `muhasebeci.demo@example.com` / `mukellef.demo@example.com`
 cihaz testleri `cakalogluercin86@gmail.com` (mükellef) ile de yapıldı.
 
 Reminder ayarları test için değiştirildi (days before = 1, hour = 0) —
-doğrulama sonrası varsayılana (`defaultReminderHour = 9`,
+doğrulama tamamlandığı için varsayılana (`defaultReminderHour = 9`,
 `defaultReminderDaysBefore = 1`, `settings_repository.dart`) döndürülmeli.
 
-## Yapılabilir geliştirmeler
-
-1. **İkinci, bağımsız bir firma için kopyalama** (ayrı Supabase/Firebase
-   projesi + ayrı GitHub reposu, paylaşımlı veri yok): app id/isim/ikon
-   değiştir, yeni Supabase projesine migration'ları uygula,
-   `flutterfire configure` ile yeni Firebase projesi bağla, `env/dev.json`
-   ve web deploy `--base-href`'i güncelle. Konsollara giriş kullanıcının
-   kendi hesabıyla yapılmalı; kod tarafı zaten ortam-bağımsız (`Env`
-   sınıfı, `--dart-define-from-file`).
+Not: ikinci, bağımsız bir firma için kopyalama fikri gündemden kaldırıldı —
+tekrar gündeme gelmedikçe önerilmemeli.

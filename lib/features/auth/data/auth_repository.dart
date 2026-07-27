@@ -44,6 +44,17 @@ class AuthRepository {
 
   Future<void> signOut() => _client.auth.signOut();
 
+  /// [redirectTo] should point at the plain site root (no `#/route`
+  /// fragment) — the recovery link's own query/fragment params would
+  /// otherwise collide with go_router's hash-based routing. The app
+  /// listens for `AuthChangeEvent.passwordRecovery` instead of relying on
+  /// landing on a specific route (see `app_router.dart`).
+  Future<void> resetPasswordForEmail(String email, {String? redirectTo}) =>
+      _client.auth.resetPasswordForEmail(email, redirectTo: redirectTo);
+
+  Future<void> updatePassword(String newPassword) =>
+      _client.auth.updateUser(UserAttributes(password: newPassword));
+
   Future<AppUser?> fetchCurrentProfile() async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return null;
