@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/document_enums.dart';
+import '../../../core/theme/glass_theme.dart';
+import '../../../core/widgets/glass_surface.dart';
+import '../../../core/widgets/shake_wrapper.dart';
 import '../../classification/parsing/tr_number_parser.dart';
 import '../../clients/data/clients_repository.dart';
 import '../application/upload_controller.dart';
@@ -17,10 +20,8 @@ class UploadDraftCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: switch (draft.status) {
+    return GlassSurface(
+      child: switch (draft.status) {
           UploadDraftStatus.parsing => _StatusRow(
             icon: const SizedBox(
               width: 20,
@@ -36,9 +37,8 @@ class UploadDraftCard extends StatelessWidget {
             fileName: draft.fileName,
             label: 'Gönderildi',
           ),
-          UploadDraftStatus.needsReview || UploadDraftStatus.sending => _ReviewForm(draft: draft),
-        },
-      ),
+        UploadDraftStatus.needsReview || UploadDraftStatus.sending => _ReviewForm(draft: draft),
+      },
     );
   }
 }
@@ -70,10 +70,6 @@ class _StatusRow extends StatelessWidget {
   }
 }
 
-// Natural next call site for `core/widgets/shake_wrapper.dart`'s
-// shake+flash error feedback once the accountant-side screens get their own
-// glass-restyle pass — not wired yet (out of scope, see the glass-restyle
-// plan: client screens only in this pass).
 class _ErrorRow extends ConsumerWidget {
   const _ErrorRow({required this.draft});
 
@@ -81,27 +77,30 @@ class _ErrorRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: [
-        const Icon(Icons.error_outline, color: Colors.red),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(draft.fileName, overflow: TextOverflow.ellipsis),
-              Text(
-                draft.errorMessage ?? 'Bilinmeyen hata',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.red),
-              ),
-            ],
+    return ShakeWrapper(
+      trigger: draft.errorMessage ?? '',
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: urgencyOverdue),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(draft.fileName, overflow: TextOverflow.ellipsis),
+                Text(
+                  draft.errorMessage ?? 'Bilinmeyen hata',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: urgencyOverdue),
+                ),
+              ],
+            ),
           ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => ref.read(uploadControllerProvider.notifier).removeDraft(draft.id),
-        ),
-      ],
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => ref.read(uploadControllerProvider.notifier).removeDraft(draft.id),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -146,13 +145,18 @@ class _ReviewForm extends ConsumerWidget {
           children: [
             Chip(label: Text(extracted.category.label)),
             if (extracted.needsManualEntry)
-              const Chip(
-                label: Text('Manuel kontrol gerekli'),
-                backgroundColor: Color(0xFFFFF3CD),
+              Chip(
+                label: const Text('Manuel kontrol gerekli'),
+                backgroundColor: urgencySoon.withValues(alpha: 0.18),
+                labelStyle: const TextStyle(color: urgencySoon, fontWeight: FontWeight.w600),
               ),
             if (draft.usedOcr) const Chip(label: Text('OCR kullanıldı')),
             if (draft.isDuplicate)
-              const Chip(label: Text('Mükerrer fiş no!'), backgroundColor: Color(0xFFF8D7DA)),
+              Chip(
+                label: const Text('Mükerrer fiş no!'),
+                backgroundColor: urgencyOverdue.withValues(alpha: 0.18),
+                labelStyle: const TextStyle(color: urgencyOverdue, fontWeight: FontWeight.w600),
+              ),
           ],
         ),
         const SizedBox(height: 12),

@@ -4,6 +4,8 @@ import 'package:pdfrx/pdfrx.dart';
 
 import '../../../core/constants/document_enums.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/gradient_background.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/document_actions.dart';
 import '../data/documents_repository.dart';
@@ -26,26 +28,33 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
     final docAsync = ref.watch(documentByIdProvider(widget.documentId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Belge Detayı')),
-      body: docAsync.when(
-        data: (doc) {
-          if (doc == null) return const Center(child: Text('Belge bulunamadı'));
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: const Text('Belge Detayı'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: GradientScaffoldBackground(
+        child: docAsync.when(
+          data: (doc) {
+            if (doc == null) return const Center(child: Text('Belge bulunamadı'));
 
-          final user = ref.read(authControllerProvider).value;
-          if (!_markedSeen && user?.role == UserRole.client) {
-            _markedSeen = true;
-            // Postgrest builders are lazy (only fire on `.then()`/await), so
-            // this fire-and-forget call needs an explicit eager Future
-            // wrapper — build() itself can't be async.
-            Future(() async {
-              await ref.read(documentsRepositoryProvider).markSeen(doc.id);
-            });
-          }
+            final user = ref.read(authControllerProvider).value;
+            if (!_markedSeen && user?.role == UserRole.client) {
+              _markedSeen = true;
+              // Postgrest builders are lazy (only fire on `.then()`/await), so
+              // this fire-and-forget call needs an explicit eager Future
+              // wrapper — build() itself can't be async.
+              Future(() async {
+                await ref.read(documentsRepositoryProvider).markSeen(doc.id);
+              });
+            }
 
-          return _DetailBody(document: doc);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(child: Text('Hata: $error')),
+            return _DetailBody(document: doc);
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stackTrace) => Center(child: Text('Hata: $error')),
+        ),
       ),
     );
   }
@@ -89,30 +98,32 @@ class _FieldsPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(document.docType.label, style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 4),
-        Text(document.category.label),
-        const SizedBox(height: 16),
-        if (document.personName != null) _Field('Ad Soyad / Unvan', document.personName!),
-        if (document.period != null) _Field('Dönem', document.period!),
-        if (document.amount != null) _Field('Tutar', formatCurrencyTr(document.amount!)),
-        if (document.dueDate != null) _Field('Vade / Tarih', formatDateTr(document.dueDate!)),
-        if (document.fisNo != null) _Field('Fiş No', document.fisNo!),
-        _Field('Durum', document.status.label),
-        if (document.paidAt != null) _Field('Ödeme Tarihi', formatDateTr(document.paidAt!)),
-        if (document.status == DocumentStatus.pending) ...[
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(document.docType.label, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 4),
+          Text(document.category.label),
           const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () async {
-              await ref.read(documentActionsProvider.notifier).markPaid(document.id);
-            },
-            child: const Text('Ödendi olarak işaretle'),
-          ),
+          if (document.personName != null) _Field('Ad Soyad / Unvan', document.personName!),
+          if (document.period != null) _Field('Dönem', document.period!),
+          if (document.amount != null) _Field('Tutar', formatCurrencyTr(document.amount!)),
+          if (document.dueDate != null) _Field('Vade / Tarih', formatDateTr(document.dueDate!)),
+          if (document.fisNo != null) _Field('Fiş No', document.fisNo!),
+          _Field('Durum', document.status.label),
+          if (document.paidAt != null) _Field('Ödeme Tarihi', formatDateTr(document.paidAt!)),
+          if (document.status == DocumentStatus.pending) ...[
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () async {
+                await ref.read(documentActionsProvider.notifier).markPaid(document.id);
+              },
+              child: const Text('Ödendi olarak işaretle'),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

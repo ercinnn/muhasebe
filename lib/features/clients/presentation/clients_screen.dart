@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/breakpoints.dart';
+import '../../../core/theme/glass_theme.dart';
+import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/glass_surface.dart';
 import '../data/clients_repository.dart';
 import '../domain/client.dart';
 import '../domain/invite.dart';
@@ -91,7 +94,9 @@ class ClientsScreen extends ConsumerWidget {
               data: (clients) {
                 final pendingInvites = invitesAsync.value ?? [];
                 if (clients.isEmpty && pendingInvites.isEmpty) {
-                  return const Center(child: Text('Henüz mükellef eklenmedi'));
+                  return const Center(
+                    child: GlassCard(child: Text('Henüz mükellef eklenmedi')),
+                  );
                 }
                 final isWide = MediaQuery.sizeOf(context).width >= Breakpoints.rail;
                 return isWide
@@ -116,14 +121,31 @@ class _ClientsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return ListView(
       children: [
         for (final client in clients)
-          Card(
-            child: ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.business)),
-              title: Text(client.fullName),
-              subtitle: const Text('Aktif mükellef'),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: GlassSurface(
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: scheme.primary.withValues(alpha: 0.15),
+                    child: Icon(Icons.business, color: scheme.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(client.fullName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        const Text('Aktif mükellef', style: TextStyle(color: Colors.black54)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         if (pendingInvites.isNotEmpty) ...[
@@ -132,14 +154,35 @@ class _ClientsList extends StatelessWidget {
             child: Text('Bekleyen Davetler', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
           for (final invite in pendingInvites)
-            Card(
-              child: ListTile(
-                leading: const CircleAvatar(child: Icon(Icons.hourglass_empty)),
-                title: Text(invite.clientName),
-                subtitle: Text('Kod: ${invite.code}'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.copy),
-                  onPressed: () => Clipboard.setData(ClipboardData(text: invite.code)),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: GlassSurface(
+                tint: scheme.primaryContainer.withValues(alpha: 0.25),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: urgencySoon.withValues(alpha: 0.15),
+                      child: const Icon(Icons.hourglass_empty, color: urgencySoon),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            invite.clientName,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          Text('Kod: ${invite.code}', style: const TextStyle(color: Colors.black54)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy),
+                      tooltip: 'Kodu kopyala',
+                      onPressed: () => Clipboard.setData(ClipboardData(text: invite.code)),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -159,36 +202,40 @@ class _ClientsTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      child: DataTable(
-        columns: const [
-          DataColumn(label: Text('Ad Soyad / Unvan')),
-          DataColumn(label: Text('Durum')),
-          DataColumn(label: Text('')),
-        ],
-        rows: [
-          for (final client in clients)
-            DataRow(
-              cells: [
-                DataCell(Text(client.fullName)),
-                const DataCell(Text('Aktif mükellef')),
-                const DataCell(SizedBox.shrink()),
-              ],
-            ),
-          for (final invite in pendingInvites)
-            DataRow(
-              cells: [
-                DataCell(Text(invite.clientName)),
-                DataCell(Text('Bekliyor — Kod: ${invite.code}')),
-                DataCell(
-                  IconButton(
-                    icon: const Icon(Icons.copy),
-                    tooltip: 'Kodu kopyala',
-                    onPressed: () => Clipboard.setData(ClipboardData(text: invite.code)),
+      child: GlassCard(
+        borderRadius: BorderRadius.circular(GlassStyle.surfaceRadius),
+        padding: const EdgeInsets.all(8),
+        child: DataTable(
+          columns: const [
+            DataColumn(label: Text('Ad Soyad / Unvan')),
+            DataColumn(label: Text('Durum')),
+            DataColumn(label: Text('')),
+          ],
+          rows: [
+            for (final client in clients)
+              DataRow(
+                cells: [
+                  DataCell(Text(client.fullName)),
+                  const DataCell(Text('Aktif mükellef')),
+                  const DataCell(SizedBox.shrink()),
+                ],
+              ),
+            for (final invite in pendingInvites)
+              DataRow(
+                cells: [
+                  DataCell(Text(invite.clientName)),
+                  DataCell(Text('Bekliyor — Kod: ${invite.code}')),
+                  DataCell(
+                    IconButton(
+                      icon: const Icon(Icons.copy),
+                      tooltip: 'Kodu kopyala',
+                      onPressed: () => Clipboard.setData(ClipboardData(text: invite.code)),
+                    ),
                   ),
-                ),
-              ],
-            ),
-        ],
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }

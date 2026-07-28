@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/glass_card.dart';
 import '../application/upload_controller.dart';
 import 'upload_draft_card.dart';
 
@@ -56,7 +57,7 @@ class UploadScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             Expanded(
               child: drafts.isEmpty
-                  ? const Center(child: Text('Henüz belge eklenmedi'))
+                  ? const Center(child: GlassCard(child: Text('Henüz belge eklenmedi')))
                   : ListView.separated(
                       itemCount: drafts.length,
                       separatorBuilder: (context, index) => const SizedBox(height: 12),
