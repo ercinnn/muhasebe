@@ -229,10 +229,22 @@ paylaşımlı bileşenler, gradient arka plan, toplam bekleyen tutar hero
 kartı, mikro etkileşimler (kaydırma aksiyonları, "Ödendi" onay animasyonu +
 titreşim, vade yaklaşınca nabız efekti, tüm ödemeler bitince confetti).
 Gerçek cihazda (Samsung A51) hem kaydırma performansı hem tüm
-etkileşimler doğrulandı (2026-07-28). Muhasebeci ekranları (Mükelleflerim/
-Belge Yükle/Gönderilenler) bilinçli olarak kapsam dışı bırakıldı — ayrı bir
-iş. `ShakeWrapper` hazır ama henüz hiçbir yerde kullanılmıyor (doğal hedefi
-`upload_draft_card.dart`'ın hata satırı, bkz. dosyadaki not).
+etkileşimler doğrulandı (2026-07-28).
+
+Muhasebeci ekranları (Mükelleflerim/Belge Yükle/Gönderilenler) ve
+paylaşımlı belge detay ekranı da aynı Glassmorphism diline geçirildi
+(2026-07-29): `AccountantHomeScreen` artık `ClientHomeScreen` ile aynı
+transparent AppBar + `GradientScaffoldBackground` kabuk desenini
+kullanıyor; `ClientsScreen`/`UploadScreen`/`UploadDraftCard`/
+`SentDocumentsScreen` düz `Card`/`ListTile`/`DataTable`/`Chip`
+kullanımlarından `GlassCard`/`GlassSurface`/`StatusBadge` + merkezi
+urgency paletine geçti. `ShakeWrapper` artık `upload_draft_card.dart`'taki
+`_ErrorRow`'da kullanılıyor (`trigger: draft.errorMessage`).
+`document_detail_screen.dart` (hem muhasebeci hem mükellef tarafından
+kullanılan paylaşımlı ekran) rol-nötr tek bir glass stiline geçirildi —
+davranış değişmedi. Web'de (`flutter run -d web-server`, gerçek
+`cakalogluer@gmail.com` muhasebeci hesabıyla) uçtan uca görsel doğrulandı;
+gerçek cihazda ayrıca doğrulanmadı.
 
 Sınıflandırma motoru gerçek GİB/SGK belgeleriyle doğrulandı (bkz.
 gotcha'lar). SGK işe giriş/işten ayrılış tarih alanları tek örnekle test
@@ -248,3 +260,15 @@ doğrulama tamamlandığı için varsayılana (`defaultReminderHour = 9`,
 
 Not: ikinci, bağımsız bir firma için kopyalama fikri gündemden kaldırıldı —
 tekrar gündeme gelmedikçe önerilmemeli.
+
+`documents` tablosundaki `documents_update_client`/`documents_update_accountant`
+RLS politikaları kaldırıldı (2026-07-29, migration
+`20260729120000_documents_update_rpc_only.sql`, canlıya uygulandı). Bunlar
+satır sahipliğini kontrol ediyordu ama sütun kısıtlaması yoktu — geçerli
+bir JWT'si olan biri PostgREST'e doğrudan istek atıp kendi belgesinin
+`amount`/`due_date`/`status` gibi alanlarını `mark_document_paid`
+RPC'sindeki kontrolleri atlayarak değiştirebilirdi. Uygulama zaten
+`documents`'a hiç ham `.update()` çağrısı yapmıyor (sadece `.insert()` ve
+`mark_document_paid`/`mark_document_seen` RPC'leri, ikisi de
+`security definer` olduğundan RLS'den etkilenmiyor) — davranış değişmedi,
+sadece kullanılmayan bir açık kapatıldı.
