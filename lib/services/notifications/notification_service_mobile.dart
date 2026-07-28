@@ -19,6 +19,9 @@ const _newDocChannelName = 'Yeni Belge Bildirimleri';
 /// Mobile: schedules local notifications at 09:00 on due-date-minus-1-day
 /// and due-date for pending payment documents.
 class NotificationServiceImpl implements NotificationService {
+  NotificationServiceImpl(this._settings);
+
+  final SettingsRepository _settings;
   final _plugin = FlutterLocalNotificationsPlugin();
 
   @override
@@ -36,8 +39,6 @@ class NotificationServiceImpl implements NotificationService {
         .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(alert: true, badge: true, sound: true);
   }
-
-  final _settings = SettingsRepository();
 
   @override
   Future<void> showNewDocumentNotification({

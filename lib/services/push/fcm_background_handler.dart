@@ -4,6 +4,7 @@ import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../core/constants/document_enums.dart';
+import '../../features/settings/data/settings_repository.dart';
 import '../../firebase_options.dart';
 import '../notifications/notification_service_mobile.dart';
 import 'push_payload.dart';
@@ -25,7 +26,10 @@ Future<void> fcmBackgroundMessageHandler(RemoteMessage message) async {
   tz_data.initializeTimeZones();
   tz.setLocalLocation(tz.getLocation('Europe/Istanbul'));
 
-  final service = NotificationServiceImpl();
+  // No Riverpod container here (see class doc comment), so this can't go
+  // through settingsRepositoryProvider like notification_providers.dart
+  // does — constructing directly is correct in this one spot.
+  final service = NotificationServiceImpl(SettingsRepository());
   await service.init(requestPermission: false);
   await service.showNewDocumentNotification(
     documentId: payload.documentId,
