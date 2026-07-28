@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../../services/pdf/pdf_processing_service.dart';
 import '../../../services/supabase/supabase_providers.dart';
 import '../../classification/models/extracted_document.dart';
+import '../../classification/parsing/tr_number_parser.dart';
 import '../../clients/data/clients_repository.dart';
 import '../../documents/data/documents_repository.dart';
 import '../domain/upload_draft.dart';
@@ -104,6 +105,14 @@ class UploadController extends _$UploadController {
       return d.copyWith(extracted: update(current));
     });
     unawaited(_checkDuplicate(draftId));
+  }
+
+  /// Parses the accountant's raw "Tutar (₺)" field input (Turkish decimal
+  /// comma format) and stores the result — keeps the classification
+  /// package's number-parsing format as an implementation detail the
+  /// presentation layer doesn't need to know about.
+  void updateAmountFromInput(String draftId, String rawValue) {
+    updateExtracted(draftId, (e) => e.copyWith(amount: parseTurkishNumber(rawValue)));
   }
 
   Future<void> send(String draftId) async {

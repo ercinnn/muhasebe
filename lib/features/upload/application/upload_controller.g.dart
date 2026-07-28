@@ -41,7 +41,7 @@ final class UploadControllerProvider
   }
 }
 
-String _$uploadControllerHash() => r'ae2f1f1c36cad6c6608cfc3c6cdef7fcda0ccb13';
+String _$uploadControllerHash() => r'46961ec260f8437899aa6d7919fcc9fed4130a11';
 
 abstract class _$UploadController extends $Notifier<List<UploadDraft>> {
   List<UploadDraft> build();

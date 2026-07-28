@@ -6,7 +6,6 @@ import '../../../core/constants/document_enums.dart';
 import '../../../core/theme/glass_theme.dart';
 import '../../../core/widgets/glass_surface.dart';
 import '../../../core/widgets/shake_wrapper.dart';
-import '../../classification/parsing/tr_number_parser.dart';
 import '../../clients/data/clients_repository.dart';
 import '../application/upload_controller.dart';
 import '../domain/upload_draft.dart';
@@ -192,10 +191,7 @@ class _ReviewForm extends ConsumerWidget {
           decoration: const InputDecoration(labelText: 'Tutar (₺)'),
           enabled: !isSending,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          onChanged: (value) => controller.updateExtracted(
-            draft.id,
-            (e) => e.copyWith(amount: parseTurkishNumber(value)),
-          ),
+          onChanged: (value) => controller.updateAmountFromInput(draft.id, value),
         ),
         const SizedBox(height: 8),
         Row(
