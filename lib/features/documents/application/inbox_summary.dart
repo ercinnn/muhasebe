@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/constants/document_enums.dart';
 import '../../../core/utils/formatters.dart';
 import '../data/documents_repository.dart';
+import '../domain/document_record.dart';
 
 part 'inbox_summary.g.dart';
 
@@ -31,7 +32,13 @@ class InboxSummary {
 @riverpod
 InboxSummary inboxSummary(Ref ref) {
   final docs = ref.watch(clientDocumentsProvider).value ?? const [];
+  return computeInboxSummary(docs);
+}
 
+/// Pure computation extracted from [inboxSummary] so it's unit-testable
+/// with a plain list of [DocumentRecord] fixtures, without needing a
+/// Riverpod container or a live `clientDocumentsProvider` stream.
+InboxSummary computeInboxSummary(List<DocumentRecord> docs) {
   final unreadCount = docs.where((d) => d.seenAt == null).length;
 
   final pending = docs.where(

@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/application/auth_controller.dart';
+import '../../features/auth/domain/app_user.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
@@ -22,33 +23,12 @@ GoRouter appRouter(Ref ref) {
     initialLocation: '/login',
     refreshListenable: RiverpodRefreshListenable(ref, authControllerProvider),
     redirect: (context, state) {
-      // Always reachable: the recovery session that lands here still counts
-      // as "logged in" to the checks below, which would otherwise bounce it
-      // to a role home before the user gets to set a new password.
-      if (state.matchedLocation == '/reset-password') return null;
-
       final authState = ref.read(authControllerProvider);
-      if (authState.isLoading) return null;
-
-      final loggingIn =
-          state.matchedLocation == '/login' ||
-          state.matchedLocation == '/signup' ||
-          state.matchedLocation == '/forgot-password';
-      final user = authState.value;
-
-      if (user == null) {
-        return loggingIn ? null : '/login';
-      }
-
-      final roleHome = user.role == UserRole.accountant ? '/accountant' : '/client';
-      if (loggingIn) return roleHome;
-
-      final onWrongRole =
-          (user.role == UserRole.accountant && state.matchedLocation.startsWith('/client')) ||
-          (user.role == UserRole.client && state.matchedLocation.startsWith('/accountant'));
-      if (onWrongRole) return roleHome;
-
-      return null;
+      return resolveRedirect(
+        matchedLocation: state.matchedLocation,
+        isLoading: authState.isLoading,
+        user: authState.value,
+      );
     },
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
@@ -84,4 +64,38 @@ GoRouter appRouter(Ref ref) {
   });
 
   return router;
+}
+
+/// Pure redirect decision, extracted from the `GoRouter.redirect` closure so
+/// it's unit-testable without building a real GoRouter/AuthController stack.
+String? resolveRedirect({
+  required String matchedLocation,
+  required bool isLoading,
+  required AppUser? user,
+}) {
+  // Always reachable: the recovery session that lands here still counts as
+  // "logged in" to the checks below, which would otherwise bounce it to a
+  // role home before the user gets to set a new password.
+  if (matchedLocation == '/reset-password') return null;
+
+  if (isLoading) return null;
+
+  final loggingIn =
+      matchedLocation == '/login' ||
+      matchedLocation == '/signup' ||
+      matchedLocation == '/forgot-password';
+
+  if (user == null) {
+    return loggingIn ? null : '/login';
+  }
+
+  final roleHome = user.role == UserRole.accountant ? '/accountant' : '/client';
+  if (loggingIn) return roleHome;
+
+  final onWrongRole =
+      (user.role == UserRole.accountant && matchedLocation.startsWith('/client')) ||
+      (user.role == UserRole.client && matchedLocation.startsWith('/accountant'));
+  if (onWrongRole) return roleHome;
+
+  return null;
 }

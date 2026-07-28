@@ -48,4 +48,4 @@ final class InboxSummaryProvider
   }
 }
 
-String _$inboxSummaryHash() => r'75a40826a3fdab175748d8f103c38d41dd1189c5';
+String _$inboxSummaryHash() => r'cb18a79a67e577ce516f593e29050bf872c1d072';
