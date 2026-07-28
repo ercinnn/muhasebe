@@ -22,4 +22,10 @@ jobs:
 
       - run: flutter analyze
 
-      - run: flutter test test/classification
+      - run: flutter test
+
+      - name: Check generated code is up to date
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          git diff --exit-code -- '*.g.dart' '*.freezed.dart' || \
+            (echo '::error::Generated code is stale — run `dart run build_runner build --delete-conflicting-outputs` and commit the result.' && exit 1)
