@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/adaptive_scaffold.dart';
-import '../../../core/widgets/gradient_background.dart';
+import '../../../core/widgets/role_shell_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../clients/presentation/clients_screen.dart';
 import '../../upload/presentation/upload_screen.dart';
@@ -29,30 +29,17 @@ class _AccountantHomeScreenState extends ConsumerState<AccountantHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
+    return RoleShellScaffold(
       destinations: _destinations,
       selectedIndex: _index,
       onDestinationSelected: (i) => setState(() => _index = i),
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Text(_titles[_index]),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Çıkış Yap',
-            onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
-          ),
-        ],
-      ),
-      body: GradientScaffoldBackground(
-        child: switch (_index) {
-          0 => const ClientsScreen(),
-          1 => const UploadScreen(),
-          _ => const SentDocumentsScreen(),
-        },
-      ),
+      title: _titles[_index],
+      onLogout: () => ref.read(authControllerProvider.notifier).signOut(),
+      body: switch (_index) {
+        0 => const ClientsScreen(),
+        1 => const UploadScreen(),
+        _ => const SentDocumentsScreen(),
+      },
     );
   }
 }

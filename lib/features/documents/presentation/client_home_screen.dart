@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/adaptive_scaffold.dart';
-import '../../../core/widgets/gradient_background.dart';
+import '../../../core/widgets/role_shell_scaffold.dart';
 import '../../../services/notifications/notification_providers.dart';
 import '../../../services/push/fcm_service.dart';
 import '../../auth/application/auth_controller.dart';
@@ -75,39 +75,28 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   Widget build(BuildContext context) {
     final unreadCount = ref.watch(inboxSummaryProvider).unreadCount;
 
-    return AdaptiveScaffold(
+    return RoleShellScaffold(
       destinations: _destinations,
       selectedIndex: _index,
       onDestinationSelected: (i) => setState(() => _index = i),
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Text(_titles[_index]),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Badge(
-              isLabelVisible: unreadCount > 0,
-              label: Text('$unreadCount'),
-              child: const Icon(Icons.mail_outline),
-            ),
+      title: _titles[_index],
+      onLogout: () => ref.read(authControllerProvider.notifier).signOut(),
+      appBarActions: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Badge(
+            isLabelVisible: unreadCount > 0,
+            label: Text('$unreadCount'),
+            child: const Icon(Icons.mail_outline),
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Çıkış Yap',
-            onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
-          ),
-        ],
-      ),
-      body: GradientScaffoldBackground(
-        child: switch (_index) {
-          0 => const PaymentsScreen(),
-          1 => const CalendarScreen(),
-          2 => const InfoScreen(),
-          _ => const SettingsScreen(),
-        },
-      ),
+        ),
+      ],
+      body: switch (_index) {
+        0 => const PaymentsScreen(),
+        1 => const CalendarScreen(),
+        2 => const InfoScreen(),
+        _ => const SettingsScreen(),
+      },
     );
   }
 }
