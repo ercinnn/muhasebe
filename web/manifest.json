@@ -1,6 +1,6 @@
 {
-    "name": "muhasebe_takip",
-    "short_name": "muhasebe_takip",
+    "name": "Tahakkuk Fişi",
+    "short_name": "Tahakkuk Fişi",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -16,7 +16,7 @@
          Tam ekran bildirimler'den elle açılmalı. -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
     <application
-        android:label="muhasebe_takip"
+        android:label="Tahakkuk Fişi"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
