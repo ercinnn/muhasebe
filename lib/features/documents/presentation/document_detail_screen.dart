@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 import '../../../core/constants/document_enums.dart';
+import '../../../core/theme/breakpoints.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/gradient_background.dart';
@@ -67,7 +68,7 @@ class _DetailBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isWide = MediaQuery.sizeOf(context).width >= 840;
+    final isWide = MediaQuery.sizeOf(context).width >= Breakpoints.rail;
     final fields = _FieldsPanel(document: document);
     final viewer = _PdfPanel(storagePath: document.storagePath);
 

@@ -86,6 +86,9 @@ class DocumentsRepository {
   Future<void> markPaid(String documentId) =>
       _client.rpc('mark_document_paid', params: {'p_document_id': documentId});
 
+  Future<void> markUnpaid(String documentId) =>
+      _client.rpc('mark_document_unpaid', params: {'p_document_id': documentId});
+
   Future<void> markSeen(String documentId) =>
       _client.rpc('mark_document_seen', params: {'p_document_id': documentId});
 

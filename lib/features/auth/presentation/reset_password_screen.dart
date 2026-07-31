@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/gradient_background.dart';
 import '../application/password_reset_controller.dart';
+import '../domain/password_policy.dart';
 
 /// Reached only via the `AuthChangeEvent.passwordRecovery` redirect set up
 /// in `app_router.dart` — the recovery session it needs is already active
@@ -53,47 +56,54 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     });
 
     return Scaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('Yeni Şifre Belirle', style: Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: 24),
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Yeni şifre'),
-                    validator: (v) =>
-                        (v == null || v.length < 6) ? 'Şifre en az 6 karakter olmalı' : null,
+      backgroundColor: Colors.transparent,
+      body: GradientScaffoldBackground(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: GlassCard(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text('Yeni Şifre Belirle', style: Theme.of(context).textTheme.headlineSmall),
+                      const SizedBox(height: 24),
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Yeni şifre',
+                          helperText: 'En az 8 karakter, 1 büyük harf, 1 küçük harf, 1 rakam',
+                          helperMaxLines: 2,
+                        ),
+                        validator: validatePasswordStrength,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _confirmController,
+                        obscureText: true,
+                        decoration: const InputDecoration(labelText: 'Yeni şifre (tekrar)'),
+                        validator: (v) =>
+                            (v != _passwordController.text) ? 'Şifreler eşleşmiyor' : null,
+                      ),
+                      const SizedBox(height: 24),
+                      FilledButton(
+                        onPressed: resetState.isLoading ? null : _submit,
+                        child: resetState.isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('Şifreyi Güncelle'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _confirmController,
-                    obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Yeni şifre (tekrar)'),
-                    validator: (v) => (v != _passwordController.text)
-                        ? 'Şifreler eşleşmiyor'
-                        : null,
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: resetState.isLoading ? null : _submit,
-                    child: resetState.isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Şifreyi Güncelle'),
-                  ),
-                ],
+                ),
               ),
             ),
           ),

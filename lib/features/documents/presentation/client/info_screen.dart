@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/document_enums.dart';
 import '../../../../core/theme/glass_theme.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/glass_card.dart';
 import '../../../../core/widgets/glass_surface.dart';
 import '../../data/documents_repository.dart';
 
@@ -21,7 +22,7 @@ class InfoScreen extends ConsumerWidget {
           ..sort((a, b) => (b.dueDate ?? b.createdAt).compareTo(a.dueDate ?? a.createdAt));
 
         if (infoDocs.isEmpty) {
-          return const Center(child: Text('Bilgilendirme belgesi bulunmuyor'));
+          return const Center(child: GlassCard(child: Text('Bilgilendirme belgesi bulunmuyor')));
         }
 
         return ListView.separated(

@@ -24,6 +24,9 @@ class PaymentListTile extends ConsumerWidget {
   Future<void> _markPaid(WidgetRef ref) =>
       ref.read(documentActionsProvider.notifier).markPaid(document.id);
 
+  Future<void> _markUnpaid(WidgetRef ref) =>
+      ref.read(documentActionsProvider.notifier).markUnpaid(document);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final due = DueStatus.of(document);
@@ -103,7 +106,12 @@ class PaymentListTile extends ConsumerWidget {
               if (canMarkPaid)
                 SuccessCheckAnimation(label: 'Ödendi', onPressed: () => _markPaid(ref))
               else if (document.status == DocumentStatus.paid)
-                const Icon(Icons.check_circle, color: urgencyPaid),
+                TextButton.icon(
+                  onPressed: () => _markUnpaid(ref),
+                  icon: const Icon(Icons.undo, size: 18),
+                  label: const Text('Ödenmedi'),
+                  style: TextButton.styleFrom(foregroundColor: urgencyPaid),
+                ),
             ],
           ),
         ),
@@ -137,6 +145,21 @@ class PaymentListTile extends ConsumerWidget {
                   foregroundColor: Colors.white,
                   icon: Icons.check_circle_outline,
                   label: 'Ödendi',
+                  borderRadius: BorderRadius.circular(GlassStyle.surfaceRadius),
+                ),
+              ],
+            )
+          : document.status == DocumentStatus.paid
+          ? ActionPane(
+              motion: const StretchMotion(),
+              extentRatio: 0.28,
+              children: [
+                SlidableAction(
+                  onPressed: (_) => _markUnpaid(ref),
+                  backgroundColor: urgencyNeutral,
+                  foregroundColor: Colors.white,
+                  icon: Icons.undo,
+                  label: 'Ödenmedi',
                   borderRadius: BorderRadius.circular(GlassStyle.surfaceRadius),
                 ),
               ],

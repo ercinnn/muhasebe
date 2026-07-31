@@ -48,5 +48,11 @@ app.*.map.json
 /env/*.json
 !/env/dev.example.json
 
+# Play Store release signing (upload keystore + passwords) — never commit
+/android/key.properties
+/android/upload-keystore.jks
+/android/*.jks
+/android/*.keystore
+
 # Claude Code harness runtime state
 .claude/scheduled_tasks.lock

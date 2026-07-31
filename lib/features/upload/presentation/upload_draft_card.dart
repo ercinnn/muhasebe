@@ -6,6 +6,7 @@ import '../../../core/constants/document_enums.dart';
 import '../../../core/theme/glass_theme.dart';
 import '../../../core/widgets/glass_surface.dart';
 import '../../../core/widgets/shake_wrapper.dart';
+import '../../../core/widgets/status_badge.dart';
 import '../../clients/data/clients_repository.dart';
 import '../application/upload_controller.dart';
 import '../domain/upload_draft.dart';
@@ -32,7 +33,7 @@ class UploadDraftCard extends StatelessWidget {
           ),
           UploadDraftStatus.error => _ErrorRow(draft: draft),
           UploadDraftStatus.sent => _StatusRow(
-            icon: const Icon(Icons.check_circle, color: Colors.green),
+            icon: const Icon(Icons.check_circle, color: urgencyPaid),
             fileName: draft.fileName,
             label: 'Gönderildi',
           ),
@@ -96,6 +97,7 @@ class _ErrorRow extends ConsumerWidget {
           ),
           IconButton(
             icon: const Icon(Icons.close),
+            tooltip: 'Taslağı kaldır',
             onPressed: () => ref.read(uploadControllerProvider.notifier).removeDraft(draft.id),
           ),
         ],
@@ -132,6 +134,7 @@ class _ReviewForm extends ConsumerWidget {
             ),
             IconButton(
               icon: const Icon(Icons.close),
+              tooltip: 'Taslağı kaldır',
               onPressed: isSending
                   ? null
                   : () => ref.read(uploadControllerProvider.notifier).removeDraft(draft.id),
@@ -142,20 +145,12 @@ class _ReviewForm extends ConsumerWidget {
           spacing: 8,
           runSpacing: 4,
           children: [
-            Chip(label: Text(extracted.category.label)),
+            StatusBadge(label: extracted.category.label, color: urgencyNeutral),
             if (extracted.needsManualEntry)
-              Chip(
-                label: const Text('Manuel kontrol gerekli'),
-                backgroundColor: urgencySoon.withValues(alpha: 0.18),
-                labelStyle: const TextStyle(color: urgencySoon, fontWeight: FontWeight.w600),
-              ),
-            if (draft.usedOcr) const Chip(label: Text('OCR kullanıldı')),
+              const StatusBadge(label: 'Manuel kontrol gerekli', color: urgencySoon),
+            if (draft.usedOcr) const StatusBadge(label: 'OCR kullanıldı', color: urgencyNeutral),
             if (draft.isDuplicate)
-              Chip(
-                label: const Text('Mükerrer fiş no!'),
-                backgroundColor: urgencyOverdue.withValues(alpha: 0.18),
-                labelStyle: const TextStyle(color: urgencyOverdue, fontWeight: FontWeight.w600),
-              ),
+              const StatusBadge(label: 'Mükerrer fiş no!', color: urgencyOverdue),
           ],
         ),
         const SizedBox(height: 12),

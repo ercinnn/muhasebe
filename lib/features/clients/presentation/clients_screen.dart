@@ -140,7 +140,7 @@ class _ClientsList extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(client.fullName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        const Text('Aktif mükellef', style: TextStyle(color: Colors.black54)),
+                        const Text('Aktif mükellef', style: TextStyle(color: GlassStyle.secondaryTextColor)),
                       ],
                     ),
                   ),
@@ -173,7 +173,10 @@ class _ClientsList extends StatelessWidget {
                             invite.clientName,
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
-                          Text('Kod: ${invite.code}', style: const TextStyle(color: Colors.black54)),
+                          Text(
+                            'Kod: ${invite.code}',
+                            style: const TextStyle(color: GlassStyle.secondaryTextColor),
+                          ),
                         ],
                       ),
                     ),

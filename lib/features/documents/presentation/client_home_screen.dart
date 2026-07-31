@@ -12,9 +12,11 @@ import '../application/inbox_summary.dart';
 import '../data/documents_repository.dart';
 import 'client/calendar_screen.dart';
 import 'client/info_screen.dart';
+import 'client/paid_documents_screen.dart';
 import 'client/payments_screen.dart';
 
-/// Shell for the client role: Ödemeler / Takvim / Bilgilendirme / Ayarlar.
+/// Shell for the client role: Ödemeler / Ödenenler / Takvim / Bilgilendirme /
+/// Ayarlar.
 /// On mobile, also boots FCM + resyncs local reminder alarms from the
 /// server on every launch (in case a push was missed while the app was
 /// closed).
@@ -30,12 +32,13 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
   static const _destinations = [
     AdaptiveDestination(icon: Icons.payments_outlined, label: 'Ödemeler'),
+    AdaptiveDestination(icon: Icons.check_circle_outline, label: 'Ödenenler'),
     AdaptiveDestination(icon: Icons.calendar_month_outlined, label: 'Takvim'),
     AdaptiveDestination(icon: Icons.info_outline, label: 'Bilgilendirme'),
     AdaptiveDestination(icon: Icons.settings_outlined, label: 'Ayarlar'),
   ];
 
-  static const _titles = ['Ödemeler', 'Takvim', 'Bilgilendirme', 'Ayarlar'];
+  static const _titles = ['Ödemeler', 'Ödenenler', 'Takvim', 'Bilgilendirme', 'Ayarlar'];
 
   @override
   void initState() {
@@ -93,8 +96,9 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       ],
       body: switch (_index) {
         0 => const PaymentsScreen(),
-        1 => const CalendarScreen(),
-        2 => const InfoScreen(),
+        1 => const PaidDocumentsScreen(),
+        2 => const CalendarScreen(),
+        3 => const InfoScreen(),
         _ => const SettingsScreen(),
       },
     );

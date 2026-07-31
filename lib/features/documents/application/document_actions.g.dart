@@ -68,7 +68,7 @@ final class DocumentActionsProvider
   }
 }
 
-String _$documentActionsHash() => r'408fe7f23c21f23ab9541eb3d97eebbe6cdefca9';
+String _$documentActionsHash() => r'91b13aadb8b3d8f4a02788eef93aed03eea6d101';
 
 /// Combines the DB write with its client-side side effect (cancelling the
 /// mobile local reminder — a no-op on web) so both call sites stay in sync.

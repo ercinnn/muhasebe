@@ -57,6 +57,7 @@ class _DocumentPreviewSheet extends ConsumerWidget {
                       ),
                       IconButton(
                         icon: const Icon(Icons.close),
+                        tooltip: 'Kapat',
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                     ],

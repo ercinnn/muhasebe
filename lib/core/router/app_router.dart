@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/domain/app_user.dart';
+import '../../features/auth/presentation/complete_signup_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
@@ -28,11 +29,16 @@ GoRouter appRouter(Ref ref) {
         matchedLocation: state.matchedLocation,
         isLoading: authState.isLoading,
         user: authState.value,
+        hasSession: ref.read(supabaseClientProvider).auth.currentSession != null,
       );
     },
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
+      GoRoute(
+        path: '/complete-signup',
+        builder: (context, state) => const CompleteSignupScreen(),
+      ),
       GoRoute(
         path: '/forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),
@@ -72,6 +78,11 @@ String? resolveRedirect({
   required String matchedLocation,
   required bool isLoading,
   required AppUser? user,
+  // Whether a Supabase auth session exists, independent of whether a
+  // `profiles` row (`user`) does. A Google sign-in lands with a session but
+  // no profile — see `handle_new_user`/`complete_oauth_signup` in
+  // `20260730140000_google_oauth_signup.sql`.
+  bool hasSession = false,
 }) {
   // Always reachable: the recovery session that lands here still counts as
   // "logged in" to the checks below, which would otherwise bounce it to a
@@ -86,7 +97,17 @@ String? resolveRedirect({
       matchedLocation == '/forgot-password';
 
   if (user == null) {
+    if (hasSession) {
+      // Authenticated via Google but the profile hasn't been provisioned
+      // yet — everything (including /login and /signup) funnels to the
+      // completion form until that's done.
+      return matchedLocation == '/complete-signup' ? null : '/complete-signup';
+    }
     return loggingIn ? null : '/login';
+  }
+
+  if (matchedLocation == '/complete-signup') {
+    return user.role == UserRole.accountant ? '/accountant' : '/client';
   }
 
   final roleHome = user.role == UserRole.accountant ? '/accountant' : '/client';

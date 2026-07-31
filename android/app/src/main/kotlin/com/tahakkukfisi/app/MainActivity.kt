@@ -1,4 +1,4 @@
-package com.muhasebeci.muhasebe_takip
+package com.tahakkukfisi.app
 
 import io.flutter.embedding.android.FlutterActivity
 

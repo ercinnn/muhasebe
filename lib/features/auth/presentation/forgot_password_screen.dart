@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/gradient_background.dart';
 import '../application/password_reset_controller.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
@@ -45,12 +47,17 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     });
 
     return Scaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: _sent ? _buildSentMessage(context) : _buildForm(context, resetState),
+      backgroundColor: Colors.transparent,
+      body: GradientScaffoldBackground(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: GlassCard(
+                child: _sent ? _buildSentMessage(context) : _buildForm(context, resetState),
+              ),
+            ),
           ),
         ),
       ),

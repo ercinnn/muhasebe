@@ -4,6 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 
 import '../../../../core/constants/document_enums.dart';
 import '../../../../core/theme/glass_theme.dart';
+import '../../../../core/widgets/glass_card.dart';
 import '../../data/documents_repository.dart';
 import '../../domain/document_record.dart';
 import '../widgets/due_status.dart';
@@ -28,11 +29,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   Color _markerColor(List<DocumentRecord> dayDocs) {
-    final urgencies = dayDocs.map(DueStatus.of).map((s) => s.urgency);
+    final urgencies = dayDocs.map(DueStatus.of).map((s) => s.urgency).toSet();
     if (urgencies.contains(DueUrgency.overdue)) return urgencyOverdue;
-    if (urgencies.any((u) => u == DueUrgency.soon || u == DueUrgency.upcoming)) {
-      return urgencySoon;
-    }
+    if (urgencies.contains(DueUrgency.soon)) return urgencySoon;
+    if (urgencies.contains(DueUrgency.upcoming)) return urgencyUpcoming;
     return urgencyPaid;
   }
 
@@ -60,6 +60,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 });
               },
               onPageChanged: (focused) => _focusedDay = focused,
+              startingDayOfWeek: StartingDayOfWeek.monday,
+              headerStyle: const HeaderStyle(formatButtonVisible: false),
+              daysOfWeekStyle: const DaysOfWeekStyle(
+                weekendStyle: TextStyle(color: urgencyOverdue, fontWeight: FontWeight.w600),
+              ),
               calendarStyle: CalendarStyle(
                 todayDecoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.85),
@@ -69,6 +74,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   color: Theme.of(context).colorScheme.secondary,
                   shape: BoxShape.circle,
                 ),
+                weekendDecoration: const BoxDecoration(
+                  color: urgencyOverdue,
+                  shape: BoxShape.circle,
+                ),
+                weekendTextStyle: const TextStyle(color: Colors.white),
               ),
               calendarBuilders: CalendarBuilders(
                 markerBuilder: (context, day, events) {
@@ -88,7 +98,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             const Divider(height: 1),
             Expanded(
               child: selectedPayments.isEmpty
-                  ? const Center(child: Text('Bu günde ödeme yok'))
+                  ? const Center(child: GlassCard(child: Text('Bu günde ödeme yok')))
                   : ListView.separated(
                       padding: const EdgeInsets.all(16),
                       itemCount: selectedPayments.length,

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/document_enums.dart';
+import '../../../../core/theme/glass_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/animated_counter.dart';
 import '../../../../core/widgets/glass_card.dart';
+import '../../../../core/widgets/glass_surface.dart';
 import '../../application/inbox_summary.dart';
 import '../../data/documents_repository.dart';
 import '../widgets/empty_state_celebration.dart';
@@ -20,7 +22,11 @@ class PaymentsScreen extends ConsumerWidget {
 
     return docsAsync.when(
       data: (docs) {
-        final payments = docs.where((d) => d.category == DocumentCategory.payment).toList()
+        final payments = docs
+            .where(
+              (d) => d.category == DocumentCategory.payment && d.status != DocumentStatus.paid,
+            )
+            .toList()
           ..sort((a, b) {
             final aDate = a.dueDate ?? DateTime(2100);
             final bDate = b.dueDate ?? DateTime(2100);
@@ -67,21 +73,24 @@ class _TotalDueHeroCard extends StatelessWidget {
         children: [
           Text(
             'Toplam Bekleyen Tutar',
-            style: Theme.of(
-              context,
-            ).textTheme.labelLarge?.copyWith(color: Colors.black54, fontWeight: FontWeight.w600),
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: GlassStyle.secondaryTextColor,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 8),
           AnimatedCounter(
             value: summary.pendingTotal,
             style: Theme.of(
               context,
-            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.black87),
+            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
             '${summary.pendingCount} bekleyen ödeme',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: GlassStyle.secondaryTextColor),
           ),
         ],
       ),
@@ -97,25 +106,23 @@ class _UpcomingPaymentsBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: scheme.primaryContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.notifications_active_outlined, color: scheme.onPrimaryContainer),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Yaklaşan ödemeler (7 gün): ${summary.upcomingCount} adet, '
-              '${formatCurrencyTr(summary.upcomingTotal)}',
-              style: TextStyle(color: scheme.onPrimaryContainer, fontWeight: FontWeight.w600),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: GlassSurface(
+        tint: scheme.primaryContainer.withValues(alpha: 0.25),
+        child: Row(
+          children: [
+            Icon(Icons.notifications_active_outlined, color: scheme.onPrimaryContainer),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Yaklaşan ödemeler (7 gün): ${summary.upcomingCount} adet, '
+                '${formatCurrencyTr(summary.upcomingTotal)}',
+                style: TextStyle(color: scheme.onPrimaryContainer, fontWeight: FontWeight.w600),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

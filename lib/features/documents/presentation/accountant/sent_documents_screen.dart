@@ -138,7 +138,7 @@ class _SentDocumentTile extends StatelessWidget {
                       '${document.docType.label}'
                       '${document.period != null ? ' • ${document.period}' : ''}'
                       '${document.dueDate != null ? ' • Vade: ${formatDateTr(document.dueDate!)}' : ''}',
-                      style: const TextStyle(color: Colors.black54),
+                      style: const TextStyle(color: GlassStyle.secondaryTextColor),
                     ),
                   ],
                 ),

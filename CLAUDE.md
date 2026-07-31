@@ -26,7 +26,7 @@ lib/
     auth/          davet kodu ile kayıt, giriş, rol bazlı yönlendirme
     classification/  SAF DART, Flutter bağımsız — sınıflandırma motoru (bkz. aşağı)
     upload/         muhasebeci: çoklu PDF yükleme, önizleme/düzeltme, gönderme
-    documents/      ortak repo + mükellef ekranları (Ödemeler/Takvim/Bilgilendirme/Ayarlar)
+    documents/      ortak repo + mükellef ekranları (Ödemeler/Ödenenler/Takvim/Bilgilendirme/Ayarlar)
     clients/        muhasebeci: mükellef listesi + davet
     settings/       yalnız mobilde anlamlı
 supabase/
@@ -198,6 +198,17 @@ release build'i reddeder.
   Configuration → Redirect URLs listesine `muhasebetakip://**` de
   eklenmeli, yoksa aynı sessiz-fallback davranışı (bkz. Site URL gotcha'sı)
   tekrarlanır.
+- **Claude Code'un Bash tool'undan `flutter run -d web-server` başlatılırken
+  stdin `/dev/null`'a bağlanıyor** — bu yüzden terminaldeki `r`/`R` hot
+  reload/restart tuşları çalışmaz (basılamaz). Kaynak değişikliğini
+  tarayıcıya yansıtmanın tek yolu: portu dinleyen process'i (`netstat -ano
+  | grep :PORT` → PID → `Get-CimInstance Win32_Process` ile
+  `flutter_tools.snapshot ... run -d web-server` komut satırına sahip
+  dart.exe PID'i bul) `taskkill /PID <pid> /T /F` ile öldürüp aynı portta
+  yeniden `flutter run -d web-server --web-port=<port> ...` başlatmak.
+  Tarayıcı sekmesini aynı origin'e (`http://localhost:<port>`) yeniden
+  navigate edince Supabase oturumu (localStorage'da persist ediliyor)
+  korunuyor, yeniden login gerekmiyor.
 
 ## Durum
 
@@ -272,3 +283,62 @@ RPC'sindeki kontrolleri atlayarak değiştirebilirdi. Uygulama zaten
 `mark_document_paid`/`mark_document_seen` RPC'leri, ikisi de
 `security definer` olduğundan RLS'den etkilenmiyor) — davranış değişmedi,
 sadece kullanılmayan bir açık kapatıldı.
+
+Tasarım tutarlılığı incelemesi (`design-reviewer` agent'ı, 2026-07-29)
+yapıldı ve bulunan 10 maddenin tamamı uygulandı. En büyüğü: auth ekranları
+(`login`/`signup`/`forgot_password`/`reset_password_screen.dart`) daha önce
+iki glass-restyle geçişine de dahil olmamıştı (stok `Scaffold`/`Center`) —
+artık diğer ekranlarla aynı `GradientScaffoldBackground` + `GlassCard`
+kalıbını kullanıyor. `settings_screen.dart` da glass diline geçti
+(`GlassCard` + `Theme.textTheme.titleLarge`). Diğerleri: `GlassStyle.
+secondaryTextColor` sabiti eklendi (`Colors.black54` tekrarları yerine —
+`payments_screen.dart`/`clients_screen.dart`/`sent_documents_screen.dart`);
+`upload_draft_card.dart`'taki durum etiketleri `Chip` yerine `StatusBadge`,
+"Gönderildi" ikonu `Colors.green` yerine `urgencyPaid`; takvim marker
+rengi artık `urgencyUpcoming`'i `urgencySoon`'dan ayırt ediyor (önceden
+ikisi de aynı turuncuydu); `calendar_screen.dart`/`info_screen.dart` boş
+durumları ve `payments_screen.dart`'taki yaklaşan-ödeme banner'ı
+`GlassCard`/`GlassSurface`'e taşındı; `document_detail_screen.dart` artık
+hardcoded `840` yerine `Breakpoints.rail` kullanıyor; 3 icon-only "kapat"
+butonuna `tooltip` eklendi. Web'de (`cakalogluer@gmail.com` muhasebeci,
+`cakalogluercin86@gmail.com` mükellef) görsel doğrulandı — takvimdeki
+soon/upcoming renk ayrımı ve yükleme taslak rozetleri hesapta yeterli veri
+olmadığından görsel doğrulanamadı, yalnızca kod incelemesiyle teyit edildi;
+gerçek cihazda hiçbiri ayrıca doğrulanmadı.
+
+Mükellef tarafına "Ödenenler" ekranı eklendi (2026-07-29): ödendi
+işaretlenen ödeme belgeleri `Ödemeler` listesinden çıkıp bu yeni sekmeye
+taşınıyor, ödeme tarihine (`paidAt`) göre en yeni en üstte sıralanıyor.
+`PaymentListTile` artık `status == paid` durumunda bir "Ödenmedi"
+butonu/swipe aksiyonu gösteriyor (`documentActionsProvider.markUnpaid`),
+bu da yeni `mark_document_unpaid` RPC'sini çağırıp belgeyi tekrar
+`pending`'e alıyor ve (varsa) vade hatırlatmasını yeniden planlıyor
+(`mark_document_paid`'in `cancelReminders`'ının simetriği). RPC migration
+(`20260729130000_mark_document_unpaid.sql`) canlı Supabase'e uygulandı.
+Web'de uçtan uca doğrulandı (deploy edildi); gerçek cihazda ayrıca
+doğrulanmadı.
+
+Takvim ekranında (`calendar_screen.dart`) üç değişiklik (2026-07-29):
+`table_calendar`'ın varsayılan İngilizce format-toggle butonu ("2 weeks")
+`headerStyle: HeaderStyle(formatButtonVisible: false)` ile kaldırıldı;
+hafta artık Pazartesi'den başlıyor (`startingDayOfWeek:
+StartingDayOfWeek.monday`); Cumartesi/Pazar hücreleri ve başlıkları
+`urgencyOverdue` rengiyle (kırmızı) vurgulanıyor
+(`CalendarStyle.weekendDecoration`/`weekendTextStyle` +
+`DaysOfWeekStyle.weekendStyle`). Web'de doğrulandı. Not: "Çarşamba"
+kısaltması "Car" görünüyor (Ç harfi eksik) — `table_calendar`'ın Türkçe
+gün kısaltmalarıyla ilgili ayrı, önceden var olan bir sorun, henüz
+düzeltilmedi.
+
+Uygulama genelinde daha canlı bir renk paleti uygulandı (2026-07-29,
+tek kaynak `lib/core/theme/glass_theme.dart` — `ColorScheme.fromSeed`
+tüm Material3 rollerini, `appBackgroundGradient` her ekranın ortak
+arka planını, `urgency*` sabitleri durum rozeti/işaretleyici renklerini
+belirlediği için tek dosyadan tüm uygulamaya (web+mobil, muhasebeci+
+mükellef) yayılıyor): seed rengi donuk indigo `#4F5FE0`'dan canlı
+mor-mavi `#5B34F5`'e; arka plan gradyanı soluk pastel
+(`#EEF1FF`→`#E3E9FD`→`#DCEBFB`) yerine belirgin mor→mavi→nane yeşili
+(`#D8CCFF`→`#BFDDFF`→`#B9F3E4`); `urgencyPaid/Overdue/Soon/Upcoming`
+daha doygun tonlara çekildi (`urgencyNeutral` kasıtlı olarak düşük
+doygun bırakıldı). Web'de görsel doğrulandı ve deploy edildi; gerçek
+cihazda ayrıca doğrulanmadı.

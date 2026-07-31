@@ -82,5 +82,62 @@ void main() {
         isNull,
       );
     });
+
+    group('Google sign-in with a session but no profile row yet', () {
+      test('sends every route (including /login and /signup) to /complete-signup', () {
+        for (final location in ['/login', '/signup', '/client', '/accountant', '/forgot-password']) {
+          expect(
+            resolveRedirect(
+              matchedLocation: location,
+              isLoading: false,
+              user: null,
+              hasSession: true,
+            ),
+            '/complete-signup',
+            reason: 'from $location',
+          );
+        }
+      });
+
+      test('leaves /complete-signup itself alone', () {
+        expect(
+          resolveRedirect(
+            matchedLocation: '/complete-signup',
+            isLoading: false,
+            user: null,
+            hasSession: true,
+          ),
+          isNull,
+        );
+      });
+
+      test('without a session, /complete-signup is treated as a protected route', () {
+        expect(
+          resolveRedirect(matchedLocation: '/complete-signup', isLoading: false, user: null),
+          '/login',
+        );
+      });
+
+      test('once the profile exists, /complete-signup bounces to the role home', () {
+        expect(
+          resolveRedirect(
+            matchedLocation: '/complete-signup',
+            isLoading: false,
+            user: _accountant,
+            hasSession: true,
+          ),
+          '/accountant',
+        );
+        expect(
+          resolveRedirect(
+            matchedLocation: '/complete-signup',
+            isLoading: false,
+            user: _client,
+            hasSession: true,
+          ),
+          '/client',
+        );
+      });
+    });
   });
 }
