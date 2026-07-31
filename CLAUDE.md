@@ -23,7 +23,7 @@ lib/
     notifications/ platform-gated bildirim servisi (mobil: yerel alarm, web: yalnız görsel/Realtime)
     push/          fcm_service.dart — FCM token kaydı + foreground handler (yalnız mobil)
   features/
-    auth/          davet kodu ile kayıt, giriş, rol bazlı yönlendirme
+    auth/          davet kodu ile kayıt, e-posta+şifre veya Google OAuth ile giriş, rol bazlı yönlendirme
     classification/  SAF DART, Flutter bağımsız — sınıflandırma motoru (bkz. aşağı)
     upload/         muhasebeci: çoklu PDF yükleme, önizleme/düzeltme, gönderme
     documents/      ortak repo + mükellef ekranları (Ödemeler/Ödenenler/Takvim/Bilgilendirme/Ayarlar)
@@ -57,7 +57,18 @@ flutter test test/classification
 flutter analyze
 dart run build_runner build --delete-conflicting-outputs
 flutter build apk --release --dart-define-from-file=env/dev.json
+flutter build appbundle --release --dart-define-from-file=env/dev.json
 ```
+
+CI (`.github/workflows/ci.yml`), `flutter analyze`/`flutter test`'ten sonra
+`build_runner build` çalıştırıp `git diff --exit-code` ile üretilen
+`.g.dart`'ların commit'lenmiş haliyle aynı olduğunu kontrol ediyor —
+`@riverpod` ile işaretli bir dosyayı (method eklemek dahil, dönüş tipini
+değiştirmesen bile) değiştirdikten sonra `build_runner` çalıştırmayı
+unutursan bu adım kırmızı olur (2026-07-31'de `auth_controller.dart`/
+`app_router.dart` düzenlemesinden sonra tam bu yüzden kırıldı — hash sabiti
+dosya içeriğine göre değişiyor, method body'si `build()` imzasını
+etkilemese de).
 
 `env/dev.json` gitignore'da — `env/dev.example.json`'dan türetilir
 (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`).
@@ -70,6 +81,18 @@ Firebase proje: `muhasebe-643d9` (`flutterfire configure` ile üretildi).
 `lib/firebase_options.dart` ve `android/app/google-services.json` gerçek
 değerler içeriyor ve commit edilmiş durumda (API key'ler gizli değil,
 Firebase app-restriction ile korunuyor — standart pratik).
+
+Android `applicationId`: `com.tahakkukfisi.app` (2026-07-30'da
+`com.muhasebeci.muhasebe_takip`'ten değiştirildi, Play Store yayınından
+önce — yayınlandıktan sonra değiştirilemez). Firebase Android app'i bu yeni
+applicationId için ayrıca kaydedildi (`flutterfire configure
+--platforms=android`, ios/web'e dokunulmadı; `google-services.json`'da eski
+paket adı için de bir client kaydı hâlâ duruyor, zararsız). Release
+imzalama `android/key.properties` + `android/upload-keystore.jks` ile
+yapılıyor — ikisi de gitignore'da, yalnızca bu makinede var. **Kaybedilirse
+uygulama bir daha güncellenemez**, güvenli yedeklenmeli (parola yöneticisi
+vb.). `android/app/build.gradle.kts`, `key.properties` yoksa release
+build'i debug key'e düşürüyor (fresh checkout/CI hâlâ derlenebilsin diye).
 
 GitHub: `https://github.com/ercinnn/muhasebe` (public — Pages ücretsiz
 planda yalnızca public repo'da çalışıyor). Web build **manuel** deploy
@@ -198,6 +221,43 @@ release build'i reddeder.
   Configuration → Redirect URLs listesine `muhasebetakip://**` de
   eklenmeli, yoksa aynı sessiz-fallback davranışı (bkz. Site URL gotcha'sı)
   tekrarlanır.
+- **Google OAuth ile `handle_new_user` trigger'ı çakışırdı, şimdi ayrıştı**
+  — trigger eskiden her `auth.users` insert'inde koşup client için davet
+  kodu yoksa `raise exception` atıyordu; bu, e-posta/şifre `signUp()`
+  çağrılarımız için doğruydu (`data:` içinde her zaman `role` gönderiyoruz)
+  ama Google'ın OAuth callback'i de `auth.users`'a insert yapıyor ve onun
+  metadata'sında `role` yok — trigger insert'i tamamen iptal ediyor,
+  kullanıcı uygulamaya hiç ulaşamadan patlıyordu. Çözüm
+  (`20260730140000_google_oauth_signup.sql`): trigger artık yalnızca
+  `raw_user_meta_data` içinde `role` anahtarı varsa (yani bizim kontrollü
+  `signUp()` çağrılarımızdan geliyorsa) profil oluşturuyor; Google girişi
+  oturumla ama profilsiz iniyor, `app_router.dart`'taki `resolveRedirect`
+  bunu `hasSession && user == null` ile yakalayıp `/complete-signup`'a
+  yönlendiriyor (`CompleteSignupScreen` rol/isim/davet kodu topluyor,
+  `complete_oauth_signup` RPC'si aynı davet kodu doğrulamasını
+  `auth.uid()` ile tekrar yapıyor). Aynı e-postayla önceden e-posta/şifre
+  hesabı olan biri Google ile girerse Supabase kimlikleri otomatik
+  birleştiriyor — bu durumda profil zaten var, `/complete-signup`
+  atlanıyor.
+- **`signInWithOAuth`/`signUp` mobil redirect'i de PKCE gotcha'sına tabi**
+  — `AuthController._authRedirectTo` aynı web-origin-vs-custom-scheme
+  ayrımını (`password_reset_controller`'daki gibi) Google girişi ve
+  e-posta onay linki için de kullanıyor (`muhasebetakip://login-callback`).
+  AndroidManifest'teki `muhasebetakip` intent-filter'ı path'siz/genel
+  olduğu için (bkz. şifre sıfırlama), ayrı bir path/manifest girişi
+  gerekmedi.
+- **E-posta onayı + şifre politikası iki yerde tanımlı, birlikte
+  değişmeli** — Supabase Auth'un min uzunluk/karakter kuralı ve "Confirm
+  email" anahtarı Dashboard'da (`Authentication → Providers → Email`)
+  ayarlanıyor; `supabase/config.toml`'daki `[auth]`/`[auth.email]` aynı
+  değerleri yalnızca yerel `supabase start` için taşıyor, hosted projeye
+  otomatik yansımıyor (`supabase config push` tüm `config.toml`'u
+  gönderiyor, dosyadaki `site_url`/`additional_redirect_urls` hâlâ
+  `127.0.0.1` olduğu için bunu çalıştırmak production redirect URL'lerini
+  sessizce ezip auth'u kırardı — bilerek kullanılmadı). İstemci tarafı
+  aynı kuralı `lib/features/auth/domain/password_policy.dart`'ta
+  ayrıca doğruluyor (sunucu reddinden önce anlık geri bildirim için).
+  Resend, Supabase'in SMTP Settings'inde custom SMTP olarak devrede.
 - **Claude Code'un Bash tool'undan `flutter run -d web-server` başlatılırken
   stdin `/dev/null`'a bağlanıyor** — bu yüzden terminaldeki `r`/`R` hot
   reload/restart tuşları çalışmaz (basılamaz). Kaynak değişikliğini
@@ -209,6 +269,25 @@ release build'i reddeder.
   Tarayıcı sekmesini aynı origin'e (`http://localhost:<port>`) yeniden
   navigate edince Supabase oturumu (localStorage'da persist ediliyor)
   korunuyor, yeniden login gerekmiyor.
+- **`flutter run -d web-server` sayfası bazen sonsuza kadar beyaz kalır,
+  hata vermeden** — DDC modül yükleyicisi (`ddc_module_loader.js`) tüm
+  script tag'lerini (bu projede ~1600 modül) baştan DOM'a ekliyor ama
+  gerçek derleme `frontend_server_aot.dart.snapshot` alt sürecinde
+  (flutter tool'un çocuğu) oluyor; bu alt süreç kaynak yetersizliğinde
+  (aynı anda çalışan orphan Gradle daemon'ları, birden fazla `flutter run`
+  denemesi vb.) sessizce ölürse, ana `flutter run` process'i hâlâ ayakta
+  kalıp portu dinlemeye devam ediyor, tarayıcı bağlantıları
+  `ESTABLISHED` kalıyor ama hiçbir modül asla gelmiyor — konsolda hata
+  yok, `flutter run` log'unda da yeni satır yok. Teşhis: tarayıcıda
+  `performance.getEntriesByType('resource').length` birkaç kontrol
+  arasında hiç artmıyorsa (gerçek yavaşlıkta artmaya devam eder) ve
+  derleyici PID'si (`Get-CimInstance Win32_Process` ile `frontend_server`
+  komut satırını taşıyan `dartaotruntime.exe`) `tasklist`'te yoksa, süreç
+  ölmüştür — tek çözüm `taskkill /F /T` ile tüm `flutter run` ağacını
+  öldürüp portu sıfırdan başlatmak. Önlem: build/test/analyze gibi ağır
+  komutları aynı anda bir `flutter run -d web-server` ile paralel
+  çalıştırmaktan kaçın, orphan Gradle daemon'larını temizle (yukarıdaki
+  madde).
 
 ## Durum
 
@@ -342,3 +421,69 @@ mor-mavi `#5B34F5`'e; arka plan gradyanı soluk pastel
 daha doygun tonlara çekildi (`urgencyNeutral` kasıtlı olarak düşük
 doygun bırakıldı). Web'de görsel doğrulandı ve deploy edildi; gerçek
 cihazda ayrıca doğrulanmadı.
+
+Play Store yayınına hazırlık (2026-07-30/31): gerçek uygulama ikonu
+(`tahakkuk_fisi.png` → `assets/icon/icon.png`, `flutter_launcher_icons`
+ile legacy+adaptive Android ikonları üretildi), `applicationId` →
+`com.tahakkukfisi.app`, release upload keystore + `build.gradle.kts`
+imzalama (bkz. gotcha'lar), `web/privacy.html` gizlilik politikası
+(deploy edildi, `https://tahakkukfisi.com/privacy.html` canlıda).
+`app-release.aab` ve `app-release.apk` derlendi, apksigner ile imza
+doğrulandı (`CN=Tahakkuk Fisi`, debug key değil). Play Console'da
+geliştirici hesabı/mağaza listesi/data safety formu/aab yükleme gibi asıl
+yayına alma adımları henüz yapılmadı (bkz. aşağıdaki Backlog).
+
+Google ile giriş eklendi (web + Android, Supabase OAuth ile — native
+`google_sign_in` SDK'sı kullanılmadı, bkz. gotcha'lar): hem mevcut
+e-posta/şifre hesabına bağlanma hem sıfırdan kayıt (yeni
+`CompleteSignupScreen` + `complete_oauth_signup` RPC) gerçek Google
+hesaplarıyla uçtan uca doğrulandı (web'de). Android'de ayrıca
+doğrulanmadı. Google Cloud Console OAuth consent screen'i hâlâ "Testing"
+modunda — yalnızca eklenen test kullanıcıları girebiliyor, "Publish App"
+yapılmadı.
+
+Şifre politikası sıkılaştırıldı (min 8 karakter + büyük/küçük harf/rakam,
+hem `password_policy.dart`'ta hem Supabase Dashboard'da) ve e-posta onayı
+(Resend SMTP üzerinden) açıldı — kayıt sonrası oturum verilmiyor, kullanıcı
+onay linkine tıklayana kadar `signInWithPassword` `email not confirmed`
+ile reddediyor; `signUp()` artık `emailRedirectTo` gönderiyor ve
+`AuthController.signUpAccountant/signUpClient` `bool` dönüp ekranın "check
+your inbox" mesajı göstermesini sağlıyor. Hepsi gerçek bir hesapla
+(`cakalogluer+onaytest@gmail.com`) uçtan uca doğrulandı.
+
+Yukarıdaki değişikliklerin tamamı commit'lenip `master`'a push edildi;
+mevcut CI (`.github/workflows/ci.yml`) yeşil (ilk push'ta unutulan
+`build_runner` yüzünden bir kez kırmızı oldu, bkz. gotcha'lar — ikinci
+commit'le düzeltildi).
+
+## Backlog (2026-07-31 itibarıyla henüz yapılmadı)
+
+Play Store yayına alma (bkz. yukarıdaki "Durum", teknik hazırlık bitti,
+kalanlar Play Console'da manuel):
+- Play Console geliştirici hesabı, mağaza listesi (açıklamalar, ekran
+  görüntüleri, feature graphic 1024×500 — henüz yok)
+- Data safety formu, içerik derecelendirmesi (IARC), izin bildirimi
+  (Alarms & reminders → `SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM` gerekçesi)
+- `app-release.aab`'yi Internal testing'e yükleme → Production'a terfi
+- Google OAuth consent screen'i Testing'den çıkarıp Publish App yapma;
+  Android'de Google girişini cihazda test etme (şimdiye kadar yalnızca
+  web'de doğrulandı)
+
+Diğer:
+- **Uygulama ikonu küçük görünüyor** — kullanıcı bir sonraki oturumda yeni
+  bir görsel yükleyecek; geldiğinde `flutter_launcher_icons` yeniden
+  çalıştırılmalı, adaptive icon safe-zone ölçeği (`assets/icon/
+  icon_foreground.png` üretimindeki `%66` scale, ikonu üreten scriptte)
+  yeni görsele göre ayarlanmalı.
+- **Güvenlik sertleştirme**: RLS politikalarının kapsamlı gözden geçirilmesi
+  (`/security-review`), login/signup için rate limiting veya CAPTCHA
+  (hCaptcha/Turnstile) değerlendirmesi, release build'de R8/ProGuard
+  minification'ın (`minifyEnabled`) açık olduğunun doğrulanması,
+  bağımlılıkların güncel/bilinen açık taşımadığının kontrolü.
+- **Ayarlar sayfası** (hem muhasebeci hem mükellef): hesap dondurma, hesap
+  kapatma/silme (Play Store politikası zaten uygulama içinden hesap silme
+  imkânı istiyor — bu iki ihtiyaç örtüşüyor). Muhasebeci tarafında: her
+  cari (mükellef) için iletişim/diğer bilgilerin girilebileceği alt sekme.
+- **Uygulama içi versiyon + geliştirici bilgisi**: Ayarlar sayfasında
+  versiyon numarası ve daha detaylı/profesyonel geliştirici iletişim
+  bilgileri gösterimi.
