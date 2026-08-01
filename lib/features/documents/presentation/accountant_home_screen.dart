@@ -6,9 +6,11 @@ import '../../../core/widgets/role_shell_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../clients/presentation/clients_screen.dart';
 import '../../upload/presentation/upload_screen.dart';
+import 'accountant/accountant_settings_screen.dart';
 import 'accountant/sent_documents_screen.dart';
 
-/// Shell for the accountant role: Mükelleflerim / Belge Yükle / Gönderilenler.
+/// Shell for the accountant role: Mükelleflerim / Belge Yükle /
+/// Gönderilenler / Ayarlar.
 class AccountantHomeScreen extends ConsumerStatefulWidget {
   const AccountantHomeScreen({super.key});
 
@@ -23,9 +25,10 @@ class _AccountantHomeScreenState extends ConsumerState<AccountantHomeScreen> {
     AdaptiveDestination(icon: Icons.people_outline, label: 'Mükelleflerim'),
     AdaptiveDestination(icon: Icons.upload_file_outlined, label: 'Belge Yükle'),
     AdaptiveDestination(icon: Icons.send_outlined, label: 'Gönderilenler'),
+    AdaptiveDestination(icon: Icons.settings_outlined, label: 'Ayarlar'),
   ];
 
-  static const _titles = ['Mükelleflerim', 'Belge Yükle', 'Gönderilenler'];
+  static const _titles = ['Mükelleflerim', 'Belge Yükle', 'Gönderilenler', 'Ayarlar'];
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +41,8 @@ class _AccountantHomeScreenState extends ConsumerState<AccountantHomeScreen> {
       body: switch (_index) {
         0 => const ClientsScreen(),
         1 => const UploadScreen(),
-        _ => const SentDocumentsScreen(),
+        2 => const SentDocumentsScreen(),
+        _ => const AccountantSettingsScreen(),
       },
     );
   }

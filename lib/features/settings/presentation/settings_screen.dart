@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/glass_card.dart';
 import '../data/settings_repository.dart';
+import 'account_management_section.dart';
+import 'app_info_section.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -11,17 +13,21 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (kIsWeb) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: GlassCard(
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const GlassCard(
             child: Text(
               'Hatırlatma bildirimleri yalnızca mobil uygulamada çalışır.\n'
               'Bu ayarlar mobil cihazınızdan yönetilir.',
               textAlign: TextAlign.center,
             ),
           ),
-        ),
+          const SizedBox(height: 16),
+          const AccountManagementSection(),
+          const SizedBox(height: 16),
+          const AppInfoSection(),
+        ],
       );
     }
 
@@ -84,6 +90,10 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
         ),
+        const SizedBox(height: 16),
+        const AccountManagementSection(),
+        const SizedBox(height: 16),
+        const AppInfoSection(),
       ],
     );
   }

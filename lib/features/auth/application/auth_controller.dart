@@ -113,4 +113,30 @@ class AuthController extends _$AuthController {
     await ref.read(authRepositoryProvider).signOut();
     state = const AsyncData(null);
   }
+
+  Future<void> freezeAccount() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(authRepositoryProvider).freezeOwnAccount();
+      return ref.read(authRepositoryProvider).fetchCurrentProfile();
+    });
+  }
+
+  Future<void> unfreezeAccount() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(authRepositoryProvider).unfreezeOwnAccount();
+      return ref.read(authRepositoryProvider).fetchCurrentProfile();
+    });
+  }
+
+  /// The RPC anonymizes the `profiles` row but deliberately leaves
+  /// `auth.users` intact (see the migration) — so this still needs an
+  /// explicit sign-out for the *initiating* device; other devices/sessions
+  /// fall back to the `deleted_at` gate in `resolveRedirect` on their next
+  /// profile refetch.
+  Future<void> deleteAccount() async {
+    await ref.read(authRepositoryProvider).deleteOwnAccount();
+    await signOut();
+  }
 }

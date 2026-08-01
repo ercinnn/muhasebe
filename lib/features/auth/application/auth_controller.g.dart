@@ -42,7 +42,7 @@ final class AuthControllerProvider
   AuthController create() => AuthController();
 }
 
-String _$authControllerHash() => r'e91d3907caf7e8172cb527e44ac0382958de8347';
+String _$authControllerHash() => r'3ed2056b614c9fafc7bb5f9d546f79e93ab1a0a0';
 
 /// Current signed-in user's profile row, kept in sync with Supabase auth
 /// state changes (sign in/out/token refresh) and re-fetched from

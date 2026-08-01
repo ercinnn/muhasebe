@@ -5,6 +5,18 @@ import 'package:muhasebe_takip/features/auth/domain/app_user.dart';
 
 const _accountant = AppUser(id: 'acc-1', role: UserRole.accountant, fullName: 'Muhasebeci');
 const _client = AppUser(id: 'client-1', role: UserRole.client, fullName: 'Mükellef');
+final _frozenClient = AppUser(
+  id: 'client-2',
+  role: UserRole.client,
+  fullName: 'Mükellef',
+  frozenAt: DateTime(2026),
+);
+final _deletedClient = AppUser(
+  id: 'client-3',
+  role: UserRole.client,
+  fullName: 'Silinmiş Kullanıcı',
+  deletedAt: DateTime(2026),
+);
 
 void main() {
   group('resolveRedirect', () {
@@ -118,26 +130,78 @@ void main() {
         );
       });
 
-      test('once the profile exists, /complete-signup bounces to the role home', () {
+    });
+
+    group('frozen or deleted account', () {
+      test('frozen profile is sent to /account-frozen from anywhere', () {
+        for (final location in ['/login', '/client', '/document/abc-123']) {
+          expect(
+            resolveRedirect(matchedLocation: location, isLoading: false, user: _frozenClient),
+            '/account-frozen',
+            reason: 'from $location',
+          );
+        }
+      });
+
+      test('leaves /account-frozen itself alone for a frozen profile', () {
         expect(
           resolveRedirect(
-            matchedLocation: '/complete-signup',
+            matchedLocation: '/account-frozen',
             isLoading: false,
-            user: _accountant,
-            hasSession: true,
+            user: _frozenClient,
           ),
-          '/accountant',
-        );
-        expect(
-          resolveRedirect(
-            matchedLocation: '/complete-signup',
-            isLoading: false,
-            user: _client,
-            hasSession: true,
-          ),
-          '/client',
+          isNull,
         );
       });
+
+      test('deleted profile is sent to /account-deleted from anywhere, including /account-frozen', () {
+        for (final location in ['/login', '/client', '/account-frozen']) {
+          expect(
+            resolveRedirect(matchedLocation: location, isLoading: false, user: _deletedClient),
+            '/account-deleted',
+            reason: 'from $location',
+          );
+        }
+      });
+
+      test('leaves /account-deleted itself alone for a deleted profile', () {
+        expect(
+          resolveRedirect(
+            matchedLocation: '/account-deleted',
+            isLoading: false,
+            user: _deletedClient,
+          ),
+          isNull,
+        );
+      });
+
+      test('a normal (non-frozen, non-deleted) profile is unaffected', () {
+        expect(
+          resolveRedirect(matchedLocation: '/client', isLoading: false, user: _client),
+          isNull,
+        );
+      });
+    });
+
+    test('once the profile exists, /complete-signup bounces to the role home', () {
+      expect(
+        resolveRedirect(
+          matchedLocation: '/complete-signup',
+          isLoading: false,
+          user: _accountant,
+          hasSession: true,
+        ),
+        '/accountant',
+      );
+      expect(
+        resolveRedirect(
+          matchedLocation: '/complete-signup',
+          isLoading: false,
+          user: _client,
+          hasSession: true,
+        ),
+        '/client',
+      );
     });
   });
 }

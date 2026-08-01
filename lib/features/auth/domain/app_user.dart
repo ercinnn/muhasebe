@@ -12,6 +12,8 @@ abstract class AppUser with _$AppUser {
     required UserRole role,
     required String fullName,
     String? accountantId,
+    DateTime? frozenAt,
+    DateTime? deletedAt,
   }) = _AppUser;
 
   factory AppUser.fromMap(Map<String, dynamic> map) => AppUser(
@@ -19,5 +21,7 @@ abstract class AppUser with _$AppUser {
     role: UserRole.fromDb(map['role'] as String),
     fullName: map['full_name'] as String,
     accountantId: map['accountant_id'] as String?,
+    frozenAt: map['frozen_at'] == null ? null : DateTime.parse(map['frozen_at'] as String),
+    deletedAt: map['deleted_at'] == null ? null : DateTime.parse(map['deleted_at'] as String),
   );
 }

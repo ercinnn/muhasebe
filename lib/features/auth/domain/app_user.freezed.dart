@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AppUser {
 
- String get id; UserRole get role; String get fullName; String? get accountantId;
+ String get id; UserRole get role; String get fullName; String? get accountantId; DateTime? get frozenAt; DateTime? get deletedAt;
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $AppUserCopyWith<AppUser> get copyWith => _$AppUserCopyWithImpl<AppUser>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppUser&&(identical(other.id, id) || other.id == id)&&(identical(other.role, role) || other.role == role)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.accountantId, accountantId) || other.accountantId == accountantId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppUser&&(identical(other.id, id) || other.id == id)&&(identical(other.role, role) || other.role == role)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.accountantId, accountantId) || other.accountantId == accountantId)&&(identical(other.frozenAt, frozenAt) || other.frozenAt == frozenAt)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,role,fullName,accountantId);
+int get hashCode => Object.hash(runtimeType,id,role,fullName,accountantId,frozenAt,deletedAt);
 
 @override
 String toString() {
-  return 'AppUser(id: $id, role: $role, fullName: $fullName, accountantId: $accountantId)';
+  return 'AppUser(id: $id, role: $role, fullName: $fullName, accountantId: $accountantId, frozenAt: $frozenAt, deletedAt: $deletedAt)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $AppUserCopyWith<$Res>  {
   factory $AppUserCopyWith(AppUser value, $Res Function(AppUser) _then) = _$AppUserCopyWithImpl;
 @useResult
 $Res call({
- String id, UserRole role, String fullName, String? accountantId
+ String id, UserRole role, String fullName, String? accountantId, DateTime? frozenAt, DateTime? deletedAt
 });
 
 
@@ -62,13 +62,15 @@ class _$AppUserCopyWithImpl<$Res>
 
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? role = null,Object? fullName = null,Object? accountantId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? role = null,Object? fullName = null,Object? accountantId = freezed,Object? frozenAt = freezed,Object? deletedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
 as UserRole,fullName: null == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
 as String,accountantId: freezed == accountantId ? _self.accountantId : accountantId // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,frozenAt: freezed == frozenAt ? _self.frozenAt : frozenAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
@@ -153,10 +155,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  UserRole role,  String fullName,  String? accountantId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  UserRole role,  String fullName,  String? accountantId,  DateTime? frozenAt,  DateTime? deletedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppUser() when $default != null:
-return $default(_that.id,_that.role,_that.fullName,_that.accountantId);case _:
+return $default(_that.id,_that.role,_that.fullName,_that.accountantId,_that.frozenAt,_that.deletedAt);case _:
   return orElse();
 
 }
@@ -174,10 +176,10 @@ return $default(_that.id,_that.role,_that.fullName,_that.accountantId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  UserRole role,  String fullName,  String? accountantId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  UserRole role,  String fullName,  String? accountantId,  DateTime? frozenAt,  DateTime? deletedAt)  $default,) {final _that = this;
 switch (_that) {
 case _AppUser():
-return $default(_that.id,_that.role,_that.fullName,_that.accountantId);case _:
+return $default(_that.id,_that.role,_that.fullName,_that.accountantId,_that.frozenAt,_that.deletedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -194,10 +196,10 @@ return $default(_that.id,_that.role,_that.fullName,_that.accountantId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  UserRole role,  String fullName,  String? accountantId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  UserRole role,  String fullName,  String? accountantId,  DateTime? frozenAt,  DateTime? deletedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _AppUser() when $default != null:
-return $default(_that.id,_that.role,_that.fullName,_that.accountantId);case _:
+return $default(_that.id,_that.role,_that.fullName,_that.accountantId,_that.frozenAt,_that.deletedAt);case _:
   return null;
 
 }
@@ -209,13 +211,15 @@ return $default(_that.id,_that.role,_that.fullName,_that.accountantId);case _:
 
 
 class _AppUser implements AppUser {
-  const _AppUser({required this.id, required this.role, required this.fullName, this.accountantId});
+  const _AppUser({required this.id, required this.role, required this.fullName, this.accountantId, this.frozenAt, this.deletedAt});
   
 
 @override final  String id;
 @override final  UserRole role;
 @override final  String fullName;
 @override final  String? accountantId;
+@override final  DateTime? frozenAt;
+@override final  DateTime? deletedAt;
 
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
@@ -227,16 +231,16 @@ _$AppUserCopyWith<_AppUser> get copyWith => __$AppUserCopyWithImpl<_AppUser>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppUser&&(identical(other.id, id) || other.id == id)&&(identical(other.role, role) || other.role == role)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.accountantId, accountantId) || other.accountantId == accountantId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppUser&&(identical(other.id, id) || other.id == id)&&(identical(other.role, role) || other.role == role)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.accountantId, accountantId) || other.accountantId == accountantId)&&(identical(other.frozenAt, frozenAt) || other.frozenAt == frozenAt)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,role,fullName,accountantId);
+int get hashCode => Object.hash(runtimeType,id,role,fullName,accountantId,frozenAt,deletedAt);
 
 @override
 String toString() {
-  return 'AppUser(id: $id, role: $role, fullName: $fullName, accountantId: $accountantId)';
+  return 'AppUser(id: $id, role: $role, fullName: $fullName, accountantId: $accountantId, frozenAt: $frozenAt, deletedAt: $deletedAt)';
 }
 
 
@@ -247,7 +251,7 @@ abstract mixin class _$AppUserCopyWith<$Res> implements $AppUserCopyWith<$Res> {
   factory _$AppUserCopyWith(_AppUser value, $Res Function(_AppUser) _then) = __$AppUserCopyWithImpl;
 @override @useResult
 $Res call({
- String id, UserRole role, String fullName, String? accountantId
+ String id, UserRole role, String fullName, String? accountantId, DateTime? frozenAt, DateTime? deletedAt
 });
 
 
@@ -264,13 +268,15 @@ class __$AppUserCopyWithImpl<$Res>
 
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? role = null,Object? fullName = null,Object? accountantId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? role = null,Object? fullName = null,Object? accountantId = freezed,Object? frozenAt = freezed,Object? deletedAt = freezed,}) {
   return _then(_AppUser(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
 as UserRole,fullName: null == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
 as String,accountantId: freezed == accountantId ? _self.accountantId : accountantId // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,frozenAt: freezed == frozenAt ? _self.frozenAt : frozenAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 

@@ -133,3 +133,80 @@ final class MyInvitesProvider
 }
 
 String _$myInvitesHash() => r'82be6b667b39efc02f346d7dbc77c2d11af9082d';
+
+@ProviderFor(clientContactInfo)
+final clientContactInfoProvider = ClientContactInfoFamily._();
+
+final class ClientContactInfoProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<ClientContactInfo?>,
+          ClientContactInfo?,
+          FutureOr<ClientContactInfo?>
+        >
+    with
+        $FutureModifier<ClientContactInfo?>,
+        $FutureProvider<ClientContactInfo?> {
+  ClientContactInfoProvider._({
+    required ClientContactInfoFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'clientContactInfoProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$clientContactInfoHash();
+
+  @override
+  String toString() {
+    return r'clientContactInfoProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<ClientContactInfo?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<ClientContactInfo?> create(Ref ref) {
+    final argument = this.argument as String;
+    return clientContactInfo(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ClientContactInfoProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$clientContactInfoHash() => r'129746a5bbad6f1ab20fd8645bfaea406e2cde68';
+
+final class ClientContactInfoFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<ClientContactInfo?>, String> {
+  ClientContactInfoFamily._()
+    : super(
+        retry: null,
+        name: r'clientContactInfoProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  ClientContactInfoProvider call(String clientId) =>
+      ClientContactInfoProvider._(argument: clientId, from: this);
+
+  @override
+  String toString() => r'clientContactInfoProvider';
+}

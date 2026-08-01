@@ -73,6 +73,12 @@ class AuthRepository {
 
   Future<void> signOut() => _client.auth.signOut();
 
+  Future<void> freezeOwnAccount() => _client.rpc('freeze_own_account');
+
+  Future<void> unfreezeOwnAccount() => _client.rpc('unfreeze_own_account');
+
+  Future<void> deleteOwnAccount() => _client.rpc('delete_own_account');
+
   /// [redirectTo] should point at the plain site root (no `#/route`
   /// fragment) — the recovery link's own query/fragment params would
   /// otherwise collide with go_router's hash-based routing. The app

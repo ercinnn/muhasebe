@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/domain/app_user.dart';
+import '../../features/auth/presentation/account_deleted_screen.dart';
+import '../../features/auth/presentation/account_frozen_screen.dart';
 import '../../features/auth/presentation/complete_signup_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
@@ -38,6 +40,14 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/complete-signup',
         builder: (context, state) => const CompleteSignupScreen(),
+      ),
+      GoRoute(
+        path: '/account-frozen',
+        builder: (context, state) => const AccountFrozenScreen(),
+      ),
+      GoRoute(
+        path: '/account-deleted',
+        builder: (context, state) => const AccountDeletedScreen(),
       ),
       GoRoute(
         path: '/forgot-password',
@@ -108,6 +118,16 @@ String? resolveRedirect({
 
   if (matchedLocation == '/complete-signup') {
     return user.role == UserRole.accountant ? '/accountant' : '/client';
+  }
+
+  // Checked before anything role-specific: a deleted/frozen profile still
+  // resolves to a `user` here (the row isn't gone, see the migration), so
+  // without this every other branch below would happily route it home.
+  if (user.deletedAt != null) {
+    return matchedLocation == '/account-deleted' ? null : '/account-deleted';
+  }
+  if (user.frozenAt != null) {
+    return matchedLocation == '/account-frozen' ? null : '/account-frozen';
   }
 
   final roleHome = user.role == UserRole.accountant ? '/accountant' : '/client';

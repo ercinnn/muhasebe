@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/supabase/supabase_providers.dart';
 import '../domain/client.dart';
+import '../domain/client_contact_info.dart';
 import '../domain/invite.dart';
 
 part 'clients_repository.g.dart';
@@ -67,6 +68,28 @@ class ClientsRepository {
     }
     throw StateError('Davet kodu oluşturulamadı');
   }
+
+  Future<ClientContactInfo?> fetchContactInfo(String clientId) async {
+    final row = await _client
+        .from('client_contact_info')
+        .select()
+        .eq('client_id', clientId)
+        .maybeSingle();
+    return row == null ? null : ClientContactInfo.fromMap(row);
+  }
+
+  Future<void> saveContactInfo(ClientContactInfo info) async {
+    final accountantId = _client.auth.currentUser?.id;
+    if (accountantId == null) throw StateError('Oturum bulunamadı');
+    await _client.from('client_contact_info').upsert({
+      'client_id': info.clientId,
+      'accountant_id': accountantId,
+      'phone': info.phone,
+      'address': info.address,
+      'notes': info.notes,
+      'updated_at': DateTime.now().toIso8601String(),
+    });
+  }
 }
 
 @riverpod
@@ -77,3 +100,7 @@ Future<List<Client>> myClients(Ref ref) => ref.watch(clientsRepositoryProvider).
 
 @riverpod
 Future<List<Invite>> myInvites(Ref ref) => ref.watch(clientsRepositoryProvider).fetchMyInvites();
+
+@riverpod
+Future<ClientContactInfo?> clientContactInfo(Ref ref, String clientId) =>
+    ref.watch(clientsRepositoryProvider).fetchContactInfo(clientId);
