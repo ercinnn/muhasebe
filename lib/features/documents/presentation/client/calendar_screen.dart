@@ -61,10 +61,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               },
               onPageChanged: (focused) => _focusedDay = focused,
               startingDayOfWeek: StartingDayOfWeek.monday,
+              // table_calendar's default (16px) clips descenders like "Çar"'s
+              // cedilla against the day grid painted right below it — found
+              // via design-lead live browser review, 2026-08-01.
+              daysOfWeekHeight: 24,
               headerStyle: const HeaderStyle(formatButtonVisible: false),
-              daysOfWeekStyle: const DaysOfWeekStyle(
-                weekendStyle: TextStyle(color: urgencyOverdue, fontWeight: FontWeight.w600),
-              ),
               calendarStyle: CalendarStyle(
                 todayDecoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.85),
@@ -81,6 +82,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 weekendTextStyle: const TextStyle(color: Colors.white),
               ),
               calendarBuilders: CalendarBuilders(
+                dowBuilder: (context, day) {
+                  const labels = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+                  final isWeekend =
+                      day.weekday == DateTime.saturday || day.weekday == DateTime.sunday;
+                  return Center(
+                    child: Text(
+                      labels[day.weekday - 1],
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: isWeekend ? urgencyOverdue : null,
+                      ),
+                    ),
+                  );
+                },
                 markerBuilder: (context, day, events) {
                   if (events.isEmpty) return null;
                   return Container(

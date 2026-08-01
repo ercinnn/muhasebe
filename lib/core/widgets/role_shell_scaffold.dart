@@ -8,6 +8,12 @@ import 'gradient_background.dart';
 /// + `AppBar` over a [GradientScaffoldBackground], with a logout action
 /// always last. [appBarActions] lets a role insert extra actions (e.g. the
 /// client's unread-mail badge) before the logout button.
+///
+/// The gradient wraps the whole [AdaptiveScaffold] (not just `body`) so it
+/// paints behind the transparent `AppBar` too — nesting it inside `body`
+/// only covers the area below the app bar, leaving the app bar on the
+/// opaque page background where a white `foregroundColor` title/icons
+/// become invisible (found via `design-lead` live review, 2026-08-01).
 class RoleShellScaffold extends StatelessWidget {
   const RoleShellScaffold({
     super.key,
@@ -30,21 +36,24 @@ class RoleShellScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
-      destinations: destinations,
-      selectedIndex: selectedIndex,
-      onDestinationSelected: onDestinationSelected,
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Text(title),
+    return GradientScaffoldBackground(
+      child: AdaptiveScaffold(
+        destinations: destinations,
+        selectedIndex: selectedIndex,
+        onDestinationSelected: onDestinationSelected,
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          ...appBarActions,
-          IconButton(icon: const Icon(Icons.logout), tooltip: 'Çıkış Yap', onPressed: onLogout),
-        ],
+        appBar: AppBar(
+          title: Text(title),
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          actions: [
+            ...appBarActions,
+            IconButton(icon: const Icon(Icons.logout), tooltip: 'Çıkış Yap', onPressed: onLogout),
+          ],
+        ),
+        body: body,
       ),
-      body: GradientScaffoldBackground(child: body),
     );
   }
 }

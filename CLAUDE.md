@@ -288,6 +288,19 @@ release build'i reddeder.
   komutları aynı anda bir `flutter run -d web-server` ile paralel
   çalıştırmaktan kaçın, orphan Gradle daemon'larını temizle (yukarıdaki
   madde).
+- **`delete_own_account` gerçek `auth.users`'ı silmiyor, bilinçli kabul
+  edilmiş bir açık bırakıyor** — hesap "silindiğinde" yalnızca
+  `profiles.deleted_at` set edilip `full_name` anonimleştiriliyor
+  (`20260731150000_account_freeze_delete.sql`); `auth.users` satırı ve
+  dolayısıyla oturum/refresh token hemen geçersiz olmuyor (bkz. o
+  migration'ın yorumundaki cascade-delete gerekçesi). `resolveRedirect`
+  bunu yalnızca **uygulama içi** yönlendirme ile engelliyor —
+  `mark_document_paid` gibi mevcut RPC'lerde veya `documents`/storage RLS
+  politikalarında `deleted_at is null` kontrolü yok. Yani "silinmiş" bir
+  hesabın çalınmış/sızıntı bir token'ı, token süresi dolana kadar
+  documents/storage'ı kullanmaya devam edebilir — 2026-07-31'de
+  `/security-review` ile bulundu, bilerek (henüz) düzeltilmedi; ileride
+  ana RPC'lere `deleted_at is null` kontrolü eklemek bir seçenek.
 
 ## Durum
 
@@ -456,34 +469,106 @@ mevcut CI (`.github/workflows/ci.yml`) yeşil (ilk push'ta unutulan
 `build_runner` yüzünden bir kez kırmızı oldu, bkz. gotcha'lar — ikinci
 commit'le düzeltildi).
 
-## Backlog (2026-07-31 itibarıyla henüz yapılmadı)
+2026-07-31'de backlog'daki "Diğer" maddelerinin çoğu tamamlandı:
+adaptive icon foreground içeriği (`assets/icon/icon_foreground.png`)
+%66'dan %90'a çıkarıldı ve Android ikonları yeniden üretildi (kullanıcı
+yeni bir görsel yüklemedi, mevcut görsel yeniden ölçeklendi — dairesel
+maske önizlemesiyle kırpılma olmadığı doğrulandı); imzalı
+`app-release.apk` derlendi. Ayarlar sayfasına uygulama sürümü +
+geliştirici iletişim bilgisi eklendi (`package_info_plus`,
+`app_info_section.dart`). Hesap dondurma (geçici, geri alınabilir giriş
+engeli) ve hesap silme (soft-delete/anonimleştirme — `documents`
+tablosundaki cascade-delete nedeniyle gerçek `auth.users` silme kasıtlı
+olarak yapılmıyor, bkz. gotcha'lar) eklendi:
+`profiles.frozen_at`/`deleted_at` + `freeze_own_account`/
+`unfreeze_own_account`/`delete_own_account` RPC'leri, `resolveRedirect`'e
+yeni `/account-frozen`/`/account-deleted` dallanması, muhasebeci tarafına
+ilk kez bir Ayarlar sekmesi (`AccountantSettingsScreen`, iki alt sekme:
+Hesap + Mükellef Bilgileri) eklendi. Mükellef Bilgileri alt sekmesinde
+muhasebeci her mükellefi için telefon/adres/not girebiliyor
+(`client_contact_info` tablosu, yalnızca ilgili muhasebeci erişebiliyor).
+`/security-review` ile bulunan 2 gerçek RLS açığı (client_contact_info
+update politikasında eksik sahiplik kontrolü; frozen_at/deleted_at'ın RPC
+dışından ham `PATCH` ile değiştirilebilmesi) aynı gün kapatıldı. Tüm
+migration'lar canlı Supabase'e uygulandı; hiçbiri gerçek cihazda ayrıca
+doğrulanmadı (yalnızca web'de derleme/route testleriyle).
+
+2026-08-01: reminder saati Samsung A51 cihazında Ayarlar'dan tekrar 9'a
+çevrildi. Takvimde "Çarşamba" kısaltmasının "Car" gibi görünmesi
+(`table_calendar`'ın `intl` tabanlı varsayılan gün başlığı yerine artık
+`calendarBuilders.dowBuilder` ile sabit Türkçe kısaltma dizisi
+kullanılıyor — `calendar_screen.dart`) ve mobilde uygulama içi AppBar'ların
+(`role_shell_scaffold.dart`, `document_detail_screen.dart`) başlık/ikon
+rengi düzeltildi: `backgroundColor: Colors.transparent` verilince Flutter
+`Colors.transparent.computeLuminance()`'ı (alfa kanalını yok sayıp saf
+siyah kabul eder) kullanarak arka planı "koyu" sanıyor ve başlığa düşük
+kontrastlı gri bir ön plan rengi veriyordu — artık her iki AppBar'da
+`foregroundColor: Colors.white` açıkça set ediliyor.
+
+Bu ilk `foregroundColor: Colors.white` değişikliği yeni bir `design-lead`
+agent'ının (bkz. `.claude/agents/design-lead.md` — statik kod taramasının
+ötesinde uygulamayı gerçekten `flutter run -d web-server` ile başlatıp
+tarayıcıda gezinen, ekran görüntüsü alan bir tasarım lideri) canlı
+incelemesinde **gerçek bir regresyon** olarak yakalandı: `GradientScaffoldBackground`
+yalnızca `Scaffold.body`'yi sarıyordu, AppBar alanı gradient'in dışında
+kalıp temanın açık zemininde kalıyordu — beyaz başlık/ikonlar tamamen
+görünmez oluyordu (önceki gri halinden daha kötü). Düzeltme: gradient artık
+`body` yerine tüm `AdaptiveScaffold`/`Scaffold`'u (AppBar dahil) sarıyor
+(`role_shell_scaffold.dart`, `document_detail_screen.dart`). Aynı canlı
+incelemede "Çar" kısaltmasının tarayıcıda gerçekten "Car" render edildiği
+de teyit edildi (2026-07-31'deki "küçük punto'da görülmesi zor" teorisi
+yanlış çıktı) — gerçek neden `table_calendar`'ın varsayılan
+`daysOfWeekHeight` (16px) değerinin cedilla'yı alttaki takvim satırıyla
+görsel olarak çakıştırıp gizlemesiydi; `daysOfWeekHeight: 24` ile
+düzeltildi. Her iki düzeltme de gerçek Chrome'da (`flutter run -d
+web-server`, `cakalogluer@gmail.com` + `cakalogluercin86@gmail.com`
+hesaplarıyla) görsel olarak doğrulandı. Henüz gerçek cihazda ayrıca
+doğrulanmadı.
+
+`design-lead` agent'ının aynı taramada bulduğu, henüz düzeltilmemiş
+tasarım tutarlılığı notları: `client_contact_info_screen.dart`'ta
+`GlassCard` bir listede tekrarlanmış (`GlassSurface` olmalıydı);
+`accountant_settings_screen.dart`'taki `TabBar` glass diline hiç
+uydurulmamış, çıplak Material bileşen olarak duruyor; takvim marker'ı
+yalnızca renge dayanıyor (erişilebilirlik notu); birkaç küçük tutarlılık
+notu (`clients_screen.dart`'ta serbest `TextStyle`, boş durum deseninde
+tek bir tutarsızlık). Düşük-orta öncelikli, backlog'a eklendi.
+
+2026-08-01: uygulama içinde gizlilik politikasına giden hiçbir bağlantı
+olmadığı fark edildi (`web/privacy.html` yalnızca web'de canlıydı, hiçbir
+ekran ona linklemiyordu). `AppInfoSection`'a (hem mükellef Ayarlar hem
+muhasebeci Ayarlar → Hesap sekmesinde kullanılıyor, tek kaynaktan her iki
+role de yayılıyor) `https://tahakkukfisi.com/privacy.html`'i harici
+tarayıcıda açan bir "Gizlilik Politikası" satırı eklendi — yeni
+`url_launcher` bağımlılığı gerektirdi (`AndroidManifest.xml`'deki mevcut
+`<queries>` bloğuna Android 11+ paket görünürlüğü için bir `https` VIEW
+intent'i de eklendi). Henüz gerçek cihazda doğrulanmadı.
+
+## Backlog (2026-08-01 itibarıyla henüz yapılmadı)
 
 Play Store yayına alma (bkz. yukarıdaki "Durum", teknik hazırlık bitti,
-kalanlar Play Console'da manuel):
+kalanlar Play Console'da manuel). Android'de Google girişi 2026-08-01'de
+gerçek cihazda test edildi ve çalıştığı doğrulandı (önceden yalnızca
+web'de doğrulanmıştı):
 - Play Console geliştirici hesabı, mağaza listesi (açıklamalar, ekran
   görüntüleri, feature graphic 1024×500 — henüz yok)
 - Data safety formu, içerik derecelendirmesi (IARC), izin bildirimi
   (Alarms & reminders → `SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM` gerekçesi)
 - `app-release.aab`'yi Internal testing'e yükleme → Production'a terfi
-- Google OAuth consent screen'i Testing'den çıkarıp Publish App yapma;
-  Android'de Google girişini cihazda test etme (şimdiye kadar yalnızca
-  web'de doğrulandı)
+- Google OAuth consent screen'i Testing'den çıkarıp Publish App yapma
 
 Diğer:
-- **Uygulama ikonu küçük görünüyor** — kullanıcı bir sonraki oturumda yeni
-  bir görsel yükleyecek; geldiğinde `flutter_launcher_icons` yeniden
-  çalıştırılmalı, adaptive icon safe-zone ölçeği (`assets/icon/
-  icon_foreground.png` üretimindeki `%66` scale, ikonu üreten scriptte)
-  yeni görsele göre ayarlanmalı.
-- **Güvenlik sertleştirme**: RLS politikalarının kapsamlı gözden geçirilmesi
-  (`/security-review`), login/signup için rate limiting veya CAPTCHA
-  (hCaptcha/Turnstile) değerlendirmesi, release build'de R8/ProGuard
-  minification'ın (`minifyEnabled`) açık olduğunun doğrulanması,
-  bağımlılıkların güncel/bilinen açık taşımadığının kontrolü.
-- **Ayarlar sayfası** (hem muhasebeci hem mükellef): hesap dondurma, hesap
-  kapatma/silme (Play Store politikası zaten uygulama içinden hesap silme
-  imkânı istiyor — bu iki ihtiyaç örtüşüyor). Muhasebeci tarafında: her
-  cari (mükellef) için iletişim/diğer bilgilerin girilebileceği alt sekme.
-- **Uygulama içi versiyon + geliştirici bilgisi**: Ayarlar sayfasında
-  versiyon numarası ve daha detaylı/profesyonel geliştirici iletişim
-  bilgileri gösterimi.
+- **Tasarım tutarlılığı** (`design-lead` agent'ının 2026-08-01 canlı
+  incelemesi, bkz. yukarıdaki "Durum"): `client_contact_info_screen.dart`'ta
+  `GlassCard` → `GlassSurface` (liste içinde performans/tutarlılık ihlali);
+  `accountant_settings_screen.dart`'taki `TabBar`'ı glass diline uydurma;
+  takvim urgency marker'ına erişilebilirlik desteği (yalnızca renk);
+  `clients_screen.dart`'taki serbest `TextStyle`'ı `Theme.textTheme`'e
+  taşıma; boş durum deseninde küçük bir tutarsızlık. Düşük-orta öncelikli.
+- **Deleted account session gap** (bkz. gotcha'lar,
+  `delete_own_account`): bilerek kabul edilmiş bir artık risk, ana
+  RPC'lere `deleted_at is null` kontrolü eklemek gelecekte bir seçenek.
+- **CAPTCHA/rate limiting** (login/signup): Supabase Auth zaten IP bazlı
+  temel rate limiting uyguluyor; hCaptcha/Turnstile entegrasyonu ayrı bir
+  üçüncü taraf hesabı + site key gerektirdiğinden ayrı bir karar olarak
+  bekletiliyor.

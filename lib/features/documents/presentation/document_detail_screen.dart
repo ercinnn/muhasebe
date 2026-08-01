@@ -28,15 +28,18 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
   Widget build(BuildContext context) {
     final docAsync = ref.watch(documentByIdProvider(widget.documentId));
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text('Belge Detayı'),
+    // Gradient wraps the whole Scaffold (not just body) so it paints behind
+    // the transparent AppBar too — see role_shell_scaffold.dart for why.
+    return GradientScaffoldBackground(
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: GradientScaffoldBackground(
-        child: docAsync.when(
+        appBar: AppBar(
+          title: const Text('Belge Detayı'),
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        body: docAsync.when(
           data: (doc) {
             if (doc == null) return const Center(child: Text('Belge bulunamadı'));
 
