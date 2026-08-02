@@ -13,7 +13,7 @@ class App extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
-      title: 'Belge Takip',
+      title: 'Tahakkuk Fişi',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       routerConfig: router,
