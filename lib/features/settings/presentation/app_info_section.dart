@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/glass_theme.dart';
 import '../../../core/widgets/glass_card.dart';
-
-final _privacyPolicyUri = Uri.parse('https://tahakkukfisi.com/privacy.html');
+import 'privacy_policy_dialog.dart';
 
 /// Shown at the bottom of every role's Ayarlar screen: app version and
 /// developer contact — required for Play Store account-deletion discovery
@@ -45,8 +43,8 @@ class AppInfoSection extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text('Gizlilik Politikası'),
-            trailing: const Icon(Icons.open_in_new, size: 18),
-            onTap: () => launchUrl(_privacyPolicyUri, mode: LaunchMode.externalApplication),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => showPrivacyPolicyDialog(context),
           ),
         ],
       ),
