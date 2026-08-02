@@ -28,12 +28,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         .toList();
   }
 
-  Color _markerColor(List<DocumentRecord> dayDocs) {
+  /// The 7x7 marker dot below a day number is color-only, so it also needs
+  /// a screen-reader label — color alone conveys nothing to a screen reader
+  /// (found via design-lead live review, 2026-08-01).
+  ({Color color, String label}) _markerInfo(List<DocumentRecord> dayDocs) {
     final urgencies = dayDocs.map(DueStatus.of).map((s) => s.urgency).toSet();
-    if (urgencies.contains(DueUrgency.overdue)) return urgencyOverdue;
-    if (urgencies.contains(DueUrgency.soon)) return urgencySoon;
-    if (urgencies.contains(DueUrgency.upcoming)) return urgencyUpcoming;
-    return urgencyPaid;
+    if (urgencies.contains(DueUrgency.overdue)) {
+      return (color: urgencyOverdue, label: 'Gecikmiş ödeme var');
+    }
+    if (urgencies.contains(DueUrgency.soon)) {
+      return (color: urgencySoon, label: 'Yaklaşan ödeme var');
+    }
+    if (urgencies.contains(DueUrgency.upcoming)) {
+      return (color: urgencyUpcoming, label: 'Ödeme var');
+    }
+    return (color: urgencyPaid, label: 'Ödenmiş belge var');
   }
 
   @override
@@ -98,13 +107,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 },
                 markerBuilder: (context, day, events) {
                   if (events.isEmpty) return null;
-                  return Container(
-                    margin: const EdgeInsets.only(top: 28),
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: _markerColor(events),
-                      shape: BoxShape.circle,
+                  final info = _markerInfo(events);
+                  return Semantics(
+                    label: info.label,
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 28),
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(color: info.color, shape: BoxShape.circle),
                     ),
                   );
                 },

@@ -287,7 +287,16 @@ release build'i reddeder.
   öldürüp portu sıfırdan başlatmak. Önlem: build/test/analyze gibi ağır
   komutları aynı anda bir `flutter run -d web-server` ile paralel
   çalıştırmaktan kaçın, orphan Gradle daemon'larını temizle (yukarıdaki
-  madde).
+  madde). 2026-08-02: `taskkill` + yeniden başlatma bir kez işe yaramadı
+  (aynı beyaz sayfa, `performance.getEntriesByType('resource').length`
+  yine sabit) — `flutter run` log'u da "The web-server device requires
+  the Dart Debug Chrome extension for debugging" uyarısı veriyordu; bu
+  uzantı olmayan bir tarayıcıda (ör. claude-in-chrome) DWDS debug bağlantısı
+  hiç kurulamayıp modül yüklemesi kalıcı olarak takılı kalabiliyor. Kesin
+  çözüm: `MSYS_NO_PATHCONV=1 flutter build web --dart-define-from-file=env/dev.json
+  --base-href /` ile statik bir release build alıp `python -m http.server
+  <port>` gibi sade bir dosya sunucusuyla servis etmek — DWDS/debug
+  bağlantısına hiç ihtiyaç duymadığından bu senaryoda güvenilir çalışıyor.
 - **`delete_own_account` gerçek `auth.users`'ı silmiyor, bilinçli kabul
   edilmiş bir açık bırakıyor** — hesap "silindiğinde" yalnızca
   `profiles.deleted_at` set edilip `full_name` anonimleştiriliyor
@@ -525,14 +534,19 @@ web-server`, `cakalogluer@gmail.com` + `cakalogluercin86@gmail.com`
 hesaplarıyla) görsel olarak doğrulandı. Henüz gerçek cihazda ayrıca
 doğrulanmadı.
 
-`design-lead` agent'ının aynı taramada bulduğu, henüz düzeltilmemiş
-tasarım tutarlılığı notları: `client_contact_info_screen.dart`'ta
-`GlassCard` bir listede tekrarlanmış (`GlassSurface` olmalıydı);
-`accountant_settings_screen.dart`'taki `TabBar` glass diline hiç
-uydurulmamış, çıplak Material bileşen olarak duruyor; takvim marker'ı
-yalnızca renge dayanıyor (erişilebilirlik notu); birkaç küçük tutarlılık
-notu (`clients_screen.dart`'ta serbest `TextStyle`, boş durum deseninde
-tek bir tutarsızlık). Düşük-orta öncelikli, backlog'a eklendi.
+`design-lead` agent'ının aynı taramada bulduğu geri kalan tasarım
+tutarlılığı notları da aynı gün (2026-08-02) düzeltildi:
+`client_contact_info_screen.dart`'taki liste öğesi `GlassCard`'dan
+`GlassSurface`'e çevrildi ve boş durumuna ikon eklendi (diğer ekranlardaki
+desenle aynı); `accountant_settings_screen.dart`'taki çıplak `TabBar`
+artık `GlassSurface` içinde hap biçimli bir indicator ile glass diline
+uyuyor; takvim marker'ına (`calendar_screen.dart`) urgency'yi sözel olarak
+anlatan bir `Semantics` etiketi eklendi (önceden yalnızca renkle
+taşınıyordu); `clients_screen.dart`'taki "Bekleyen Davetler" başlığı
+serbest `TextStyle` yerine `Theme.textTheme.titleSmall` kullanıyor. Web'de
+canlı Chrome'da (`cakalogluer@gmail.com` hesabıyla, `tahakkukfisi.com`
+üzerinde) AppBar/TabBar görsel olarak doğrulandı; kalan dördü yalnızca
+`flutter analyze` ile teyit edildi, henüz görsel doğrulama yapılmadı.
 
 2026-08-01: uygulama içinde gizlilik politikasına giden hiçbir bağlantı
 olmadığı fark edildi (`web/privacy.html` yalnızca web'de canlıydı, hiçbir
@@ -558,13 +572,6 @@ web'de doğrulanmıştı):
 - Google OAuth consent screen'i Testing'den çıkarıp Publish App yapma
 
 Diğer:
-- **Tasarım tutarlılığı** (`design-lead` agent'ının 2026-08-01 canlı
-  incelemesi, bkz. yukarıdaki "Durum"): `client_contact_info_screen.dart`'ta
-  `GlassCard` → `GlassSurface` (liste içinde performans/tutarlılık ihlali);
-  `accountant_settings_screen.dart`'taki `TabBar`'ı glass diline uydurma;
-  takvim urgency marker'ına erişilebilirlik desteği (yalnızca renk);
-  `clients_screen.dart`'taki serbest `TextStyle`'ı `Theme.textTheme`'e
-  taşıma; boş durum deseninde küçük bir tutarsızlık. Düşük-orta öncelikli.
 - **Deleted account session gap** (bkz. gotcha'lar,
   `delete_own_account`): bilerek kabul edilmiş bir artık risk, ana
   RPC'lere `deleted_at is null` kontrolü eklemek gelecekte bir seçenek.

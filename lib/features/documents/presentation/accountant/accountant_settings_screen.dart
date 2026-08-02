@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/glass_theme.dart';
+import '../../../../core/widgets/glass_surface.dart';
 import '../../../clients/presentation/client_contact_info_screen.dart';
 import '../../../settings/presentation/account_management_section.dart';
 import '../../../settings/presentation/app_info_section.dart';
@@ -18,11 +20,26 @@ class AccountantSettingsScreen extends StatelessWidget {
       length: 2,
       child: Column(
         children: [
-          const TabBar(
-            tabs: [
-              Tab(text: 'Hesap'),
-              Tab(text: 'Mükellef Bilgileri'),
-            ],
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: GlassSurface(
+              padding: const EdgeInsets.all(4),
+              borderRadius: BorderRadius.circular(999),
+              child: TabBar(
+                tabs: const [
+                  Tab(text: 'Hesap'),
+                  Tab(text: 'Mükellef Bilgileri'),
+                ],
+                indicator: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                labelColor: Colors.white,
+                unselectedLabelColor: GlassStyle.secondaryTextColor,
+              ),
+            ),
           ),
           Expanded(
             child: TabBarView(

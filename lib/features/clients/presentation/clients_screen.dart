@@ -149,9 +149,12 @@ class _ClientsList extends StatelessWidget {
             ),
           ),
         if (pendingInvites.isNotEmpty) ...[
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Text('Bekleyen Davetler', style: TextStyle(fontWeight: FontWeight.bold)),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              'Bekleyen Davetler',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
           ),
           for (final invite in pendingInvites)
             Padding(

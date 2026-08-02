@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/glass_theme.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/glass_surface.dart';
 import '../data/clients_repository.dart';
 import '../domain/client.dart';
 import '../domain/client_contact_info.dart';
@@ -19,10 +21,27 @@ class ClientContactInfoScreen extends ConsumerWidget {
     return clientsAsync.when(
       data: (clients) {
         if (clients.isEmpty) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(24),
-              child: GlassCard(child: Text('Henüz mükellefiniz yok', textAlign: TextAlign.center)),
+              padding: const EdgeInsets.all(24),
+              child: GlassCard(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.people_outline,
+                      size: 40,
+                      color: GlassStyle.secondaryTextColor,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Henüz mükellefiniz yok',
+                      style: Theme.of(context).textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
             ),
           );
         }
@@ -103,7 +122,7 @@ class _ClientContactCardState extends ConsumerState<_ClientContactCard> {
     final infoAsync = ref.watch(clientContactInfoProvider(widget.client.id));
     infoAsync.whenData(_applyLoadedInfo);
 
-    return GlassCard(
+    return GlassSurface(
       child: ExpansionTile(
         tilePadding: EdgeInsets.zero,
         title: Text(widget.client.fullName),
