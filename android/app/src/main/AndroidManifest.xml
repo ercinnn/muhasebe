@@ -2,7 +2,6 @@
     <!-- flutter_local_notifications: exact-time payment reminders that
          survive a device reboot. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <!-- Android 13+ (API 33+) requires this to be declared before any
          runtime notification-permission request (flutter_local_notifications'
