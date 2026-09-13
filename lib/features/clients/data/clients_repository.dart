@@ -87,6 +87,7 @@ class ClientsRepository {
       'phone': info.phone,
       'address': info.address,
       'notes': info.notes,
+      'whatsapp_enabled': info.whatsappEnabled,
       'updated_at': DateTime.now().toIso8601String(),
     });
   }

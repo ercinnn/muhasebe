@@ -71,6 +71,7 @@ class _ClientContactCardState extends ConsumerState<_ClientContactCard> {
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _notesController = TextEditingController();
+  bool _whatsappEnabled = false;
   bool _loaded = false;
   bool _saving = false;
 
@@ -88,6 +89,7 @@ class _ClientContactCardState extends ConsumerState<_ClientContactCard> {
     _phoneController.text = info.phone ?? '';
     _addressController.text = info.address ?? '';
     _notesController.text = info.notes ?? '';
+    _whatsappEnabled = info.whatsappEnabled;
   }
 
   Future<void> _save() async {
@@ -104,6 +106,7 @@ class _ClientContactCardState extends ConsumerState<_ClientContactCard> {
                   ? null
                   : _addressController.text.trim(),
               notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+              whatsappEnabled: _whatsappEnabled,
             ),
           );
       ref.invalidate(clientContactInfoProvider(widget.client.id));
@@ -144,7 +147,17 @@ class _ClientContactCardState extends ConsumerState<_ClientContactCard> {
             decoration: const InputDecoration(labelText: 'Diğer bilgiler'),
             maxLines: 3,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('WhatsApp bildirimi gönder'),
+            subtitle: const Text(
+              'Belge yüklendiğinde yukarıdaki telefon numarasına WhatsApp üzerinden bildirim gönderilir.',
+            ),
+            value: _whatsappEnabled,
+            onChanged: (value) => setState(() => _whatsappEnabled = value),
+          ),
+          const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
             child: FilledButton(

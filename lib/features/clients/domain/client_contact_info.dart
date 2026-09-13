@@ -12,6 +12,7 @@ abstract class ClientContactInfo with _$ClientContactInfo {
     String? phone,
     String? address,
     String? notes,
+    @Default(false) bool whatsappEnabled,
   }) = _ClientContactInfo;
 
   factory ClientContactInfo.fromMap(Map<String, dynamic> map) => ClientContactInfo(
@@ -19,5 +20,6 @@ abstract class ClientContactInfo with _$ClientContactInfo {
     phone: map['phone'] as String?,
     address: map['address'] as String?,
     notes: map['notes'] as String?,
+    whatsappEnabled: map['whatsapp_enabled'] as bool? ?? false,
   );
 }

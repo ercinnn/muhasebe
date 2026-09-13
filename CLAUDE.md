@@ -748,7 +748,7 @@ denemede `belge_bildirimi_odeme` göndermeye çalışan her istek
 başarısız oldu — üç ayrı kök neden art arda bulunup düzeltildi:
 1. `send-whatsapp-document/index.ts`'teki sabit `WHATSAPP_GRAPH_API_VERSION`
    hâlâ `v21.0`'dı (fonksiyon ilk yazıldığındaki güncel sürüm); bu sürüm
-   art tık yeni onaylanan template'leri çözemiyordu. `v26.0`'a
+   artık yeni onaylanan template'leri çözemiyordu. `v26.0`'a
    güncellenip deploy edildi.
 2. `WHATSAPP_ACCESS_TOKEN` secret'ı bir Supabase log satırının "Kopyala"
    butonuna güvenilip panodan okunurken aslında kopyalama başarısız olmuş
@@ -768,6 +768,23 @@ başarısız oldu — üç ayrı kök neden art arda bulunup düzeltildi:
    gmail.com` geçici olarak demo muhasebeciye (`muhasebeci.demo@example.com`)
    bağlanıp test sonrası gerçek muhasebecisine (`uuysall@gmail.com`) geri
    bağlandı; tüm test `documents` satırları ve test PDF'i temizlendi.
+
+2026-09-14: `client_contact_info_screen.dart`'a "WhatsApp bildirimi gönder"
+switch'i eklendi — `whatsapp_enabled` artık muhasebeci tarafından
+uygulama içinden (Ayarlar → Mükellef Bilgileri) açılıp kapatılabiliyor,
+önceden yalnızca SQL ile mümkündü. `ClientContactInfo` domain modeline
+(`@Default(false) bool whatsappEnabled`, `whatsapp_enabled` sütununa map
+ediliyor) yeni alan eklenip `build_runner` ile freezed dosyası yeniden
+üretildi; `ClientsRepository.saveContactInfo` upsert payload'ına
+`whatsapp_enabled` eklendi. Yerel bir `flutter build web` +
+`python -m http.server` ile (`flutter run -d web-server`'ın DWDS/debug
+uzantısı sorunu yüzünden, bkz. gotcha'lar) gerçek Chrome'da
+`muhasebeci.demo@example.com` hesabıyla uçtan uca doğrulandı: telefon
+girilip switch açılınca `whatsapp_enabled=true` kalıcı oluyor, sayfa
+yenilenince (F5) doğru yükleniyor, switch kapatılıp telefon silinince
+`whatsapp_enabled=false`/`phone=null` oluyor — demo hesap test sonrası bu
+temiz haline döndürüldü. `flutter analyze` temiz. Henüz gerçek cihazda
+ayrıca doğrulanmadı, `tahakkukfisi.com`'a deploy edilmedi.
 
 ## Backlog (2026-08-05 itibarıyla henüz yapılmadı)
 
@@ -799,9 +816,8 @@ WhatsApp belge bildirimi (bkz. Durum, 2026-09-12/13):
   netleşmedi** — `whatsapp_enabled` varsayılan `false` kill switch bu
   yüzden var; genel açılışa (herkese `true`) geçmeden önce hukuki netlik
   gerekiyor.
-- **client_contact_info_screen.dart'a UI eklenmedi** — flag şu an yalnızca
-  SQL ile açılıyor; ileride muhasebecinin kendi ekranından telefon +
-  "WhatsApp bildirimi gönder" switch'i açması istenirse ayrı bir iterasyon.
+- ~~client_contact_info_screen.dart'a UI eklenmedi~~ — 2026-09-14'te eklendi,
+  bkz. Durum.
 
 Diğer:
 - **Deleted account session gap** (bkz. gotcha'lar,

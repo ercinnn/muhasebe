@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ClientContactInfo {
 
- String get clientId; String? get phone; String? get address; String? get notes;
+ String get clientId; String? get phone; String? get address; String? get notes; bool get whatsappEnabled;
 /// Create a copy of ClientContactInfo
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $ClientContactInfoCopyWith<ClientContactInfo> get copyWith => _$ClientContactInf
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ClientContactInfo&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.address, address) || other.address == address)&&(identical(other.notes, notes) || other.notes == notes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ClientContactInfo&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.address, address) || other.address == address)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.whatsappEnabled, whatsappEnabled) || other.whatsappEnabled == whatsappEnabled));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,clientId,phone,address,notes);
+int get hashCode => Object.hash(runtimeType,clientId,phone,address,notes,whatsappEnabled);
 
 @override
 String toString() {
-  return 'ClientContactInfo(clientId: $clientId, phone: $phone, address: $address, notes: $notes)';
+  return 'ClientContactInfo(clientId: $clientId, phone: $phone, address: $address, notes: $notes, whatsappEnabled: $whatsappEnabled)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $ClientContactInfoCopyWith<$Res>  {
   factory $ClientContactInfoCopyWith(ClientContactInfo value, $Res Function(ClientContactInfo) _then) = _$ClientContactInfoCopyWithImpl;
 @useResult
 $Res call({
- String clientId, String? phone, String? address, String? notes
+ String clientId, String? phone, String? address, String? notes, bool whatsappEnabled
 });
 
 
@@ -62,13 +62,14 @@ class _$ClientContactInfoCopyWithImpl<$Res>
 
 /// Create a copy of ClientContactInfo
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? clientId = null,Object? phone = freezed,Object? address = freezed,Object? notes = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? clientId = null,Object? phone = freezed,Object? address = freezed,Object? notes = freezed,Object? whatsappEnabled = null,}) {
   return _then(_self.copyWith(
 clientId: null == clientId ? _self.clientId : clientId // ignore: cast_nullable_to_non_nullable
 as String,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,address: freezed == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,whatsappEnabled: null == whatsappEnabled ? _self.whatsappEnabled : whatsappEnabled // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -153,10 +154,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String clientId,  String? phone,  String? address,  String? notes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String clientId,  String? phone,  String? address,  String? notes,  bool whatsappEnabled)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ClientContactInfo() when $default != null:
-return $default(_that.clientId,_that.phone,_that.address,_that.notes);case _:
+return $default(_that.clientId,_that.phone,_that.address,_that.notes,_that.whatsappEnabled);case _:
   return orElse();
 
 }
@@ -174,10 +175,10 @@ return $default(_that.clientId,_that.phone,_that.address,_that.notes);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String clientId,  String? phone,  String? address,  String? notes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String clientId,  String? phone,  String? address,  String? notes,  bool whatsappEnabled)  $default,) {final _that = this;
 switch (_that) {
 case _ClientContactInfo():
-return $default(_that.clientId,_that.phone,_that.address,_that.notes);case _:
+return $default(_that.clientId,_that.phone,_that.address,_that.notes,_that.whatsappEnabled);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -194,10 +195,10 @@ return $default(_that.clientId,_that.phone,_that.address,_that.notes);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String clientId,  String? phone,  String? address,  String? notes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String clientId,  String? phone,  String? address,  String? notes,  bool whatsappEnabled)?  $default,) {final _that = this;
 switch (_that) {
 case _ClientContactInfo() when $default != null:
-return $default(_that.clientId,_that.phone,_that.address,_that.notes);case _:
+return $default(_that.clientId,_that.phone,_that.address,_that.notes,_that.whatsappEnabled);case _:
   return null;
 
 }
@@ -209,13 +210,14 @@ return $default(_that.clientId,_that.phone,_that.address,_that.notes);case _:
 
 
 class _ClientContactInfo implements ClientContactInfo {
-  const _ClientContactInfo({required this.clientId, this.phone, this.address, this.notes});
+  const _ClientContactInfo({required this.clientId, this.phone, this.address, this.notes, this.whatsappEnabled = false});
   
 
 @override final  String clientId;
 @override final  String? phone;
 @override final  String? address;
 @override final  String? notes;
+@override@JsonKey() final  bool whatsappEnabled;
 
 /// Create a copy of ClientContactInfo
 /// with the given fields replaced by the non-null parameter values.
@@ -227,16 +229,16 @@ _$ClientContactInfoCopyWith<_ClientContactInfo> get copyWith => __$ClientContact
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ClientContactInfo&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.address, address) || other.address == address)&&(identical(other.notes, notes) || other.notes == notes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ClientContactInfo&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.address, address) || other.address == address)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.whatsappEnabled, whatsappEnabled) || other.whatsappEnabled == whatsappEnabled));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,clientId,phone,address,notes);
+int get hashCode => Object.hash(runtimeType,clientId,phone,address,notes,whatsappEnabled);
 
 @override
 String toString() {
-  return 'ClientContactInfo(clientId: $clientId, phone: $phone, address: $address, notes: $notes)';
+  return 'ClientContactInfo(clientId: $clientId, phone: $phone, address: $address, notes: $notes, whatsappEnabled: $whatsappEnabled)';
 }
 
 
@@ -247,7 +249,7 @@ abstract mixin class _$ClientContactInfoCopyWith<$Res> implements $ClientContact
   factory _$ClientContactInfoCopyWith(_ClientContactInfo value, $Res Function(_ClientContactInfo) _then) = __$ClientContactInfoCopyWithImpl;
 @override @useResult
 $Res call({
- String clientId, String? phone, String? address, String? notes
+ String clientId, String? phone, String? address, String? notes, bool whatsappEnabled
 });
 
 
@@ -264,13 +266,14 @@ class __$ClientContactInfoCopyWithImpl<$Res>
 
 /// Create a copy of ClientContactInfo
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? clientId = null,Object? phone = freezed,Object? address = freezed,Object? notes = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? clientId = null,Object? phone = freezed,Object? address = freezed,Object? notes = freezed,Object? whatsappEnabled = null,}) {
   return _then(_ClientContactInfo(
 clientId: null == clientId ? _self.clientId : clientId // ignore: cast_nullable_to_non_nullable
 as String,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,address: freezed == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,whatsappEnabled: null == whatsappEnabled ? _self.whatsappEnabled : whatsappEnabled // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
