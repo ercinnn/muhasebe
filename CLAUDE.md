@@ -27,7 +27,7 @@ lib/
     classification/  SAF DART, Flutter bağımsız — sınıflandırma motoru (bkz. aşağı)
     upload/         muhasebeci: çoklu PDF yükleme, önizleme/düzeltme, gönderme
     documents/      ortak repo + mükellef ekranları (Ödemeler/Ödenenler/Takvim/Bilgilendirme/Ayarlar)
-    clients/        muhasebeci: mükellef listesi + davet
+    clients/        muhasebeci: mükellef listesi + davet + mükellef iletişim bilgileri (telefon/WhatsApp)
     settings/       yalnız mobilde anlamlı
 supabase/
   migrations/       şema, RLS, storage policy, pg_net webhook trigger
@@ -47,7 +47,8 @@ Platform gating iki türlü yapılıyor, karıştırma:
 
 State management: Riverpod codegen (`@riverpod` / `@Riverpod(keepAlive: true)`).
 Kod değiştikten sonra `dart run build_runner build` (veya geliştirirken
-`... watch`) çalıştırmak gerekir; `.g.dart` dosyaları commit edilir.
+`... watch`) çalıştırmak gerekir; `.g.dart`/`.freezed.dart` dosyaları
+commit edilir.
 
 ## Geliştirme komutları
 
@@ -61,39 +62,31 @@ flutter build apk --release --dart-define-from-file=env/dev.json
 flutter build appbundle --release --dart-define-from-file=env/dev.json
 ```
 
-CI (`.github/workflows/ci.yml`), `flutter analyze`/`flutter test`'ten sonra
-`build_runner build` çalıştırıp `git diff --exit-code` ile üretilen
-`.g.dart`'ların commit'lenmiş haliyle aynı olduğunu kontrol ediyor —
-`@riverpod` ile işaretli bir dosyayı (method eklemek dahil, dönüş tipini
-değiştirmesen bile) değiştirdikten sonra `build_runner` çalıştırmayı
-unutursan bu adım kırmızı olur (2026-07-31'de `auth_controller.dart`/
-`app_router.dart` düzenlemesinden sonra tam bu yüzden kırıldı — hash sabiti
-dosya içeriğine göre değişiyor, method body'si `build()` imzasını
-etkilemese de).
+CI (`.github/workflows/ci.yml`) `build_runner build` sonrası `git diff
+--exit-code` ile üretilen dosyaların commit'lenmiş haliyle aynı olduğunu
+kontrol ediyor — `@riverpod`/`@freezed` işaretli bir dosyayı değiştirip
+`build_runner`'ı unutursan bu adım kırmızı olur.
 
 `env/dev.json` gitignore'da — `env/dev.example.json`'dan türetilir
 (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`).
 
 Supabase hosted proje: `tkgbjurobhuyxdetyqxd`. Migration: `supabase db push`
 (linked proje). Edge Function deploy:
-`supabase functions deploy on-document-insert --no-verify-jwt`.
+`supabase functions deploy <fn> --no-verify-jwt`.
 
 Firebase proje: `muhasebe-643d9` (`flutterfire configure` ile üretildi).
 `lib/firebase_options.dart` ve `android/app/google-services.json` gerçek
 değerler içeriyor ve commit edilmiş durumda (API key'ler gizli değil,
 Firebase app-restriction ile korunuyor — standart pratik).
 
-Android `applicationId`: `com.tahakkukfisi.app` (2026-07-30'da
-`com.muhasebeci.muhasebe_takip`'ten değiştirildi, Play Store yayınından
-önce — yayınlandıktan sonra değiştirilemez). Firebase Android app'i bu yeni
-applicationId için ayrıca kaydedildi (`flutterfire configure
---platforms=android`, ios/web'e dokunulmadı; `google-services.json`'da eski
-paket adı için de bir client kaydı hâlâ duruyor, zararsız). Release
-imzalama `android/key.properties` + `android/upload-keystore.jks` ile
-yapılıyor — ikisi de gitignore'da, yalnızca bu makinede var. **Kaybedilirse
-uygulama bir daha güncellenemez**, güvenli yedeklenmeli (parola yöneticisi
-vb.). `android/app/build.gradle.kts`, `key.properties` yoksa release
-build'i debug key'e düşürüyor (fresh checkout/CI hâlâ derlenebilsin diye).
+Android `applicationId`: `com.tahakkukfisi.app` (yayından önce
+`com.muhasebeci.muhasebe_takip`'ten değiştirildi — yayınlandıktan sonra
+değiştirilemez). Release imzalama `android/key.properties` +
+`android/upload-keystore.jks` ile yapılıyor — ikisi de gitignore'da,
+yalnızca bu makinede var. **Kaybedilirse uygulama bir daha
+güncellenemez**, güvenli yedeklenmeli. `build.gradle.kts`,
+`key.properties` yoksa release build'i debug key'e düşürüyor (fresh
+checkout/CI hâlâ derlenebilsin diye).
 
 GitHub: `https://github.com/ercinnn/muhasebe` (public — Pages ücretsiz
 planda yalnızca public repo'da çalışıyor). Web build **manuel** deploy
@@ -108,18 +101,16 @@ cd build/web && rm -rf .git && git init -q && git checkout -q -b gh-pages \
   && git push -f origin gh-pages
 ```
 
-Canlı: `https://tahakkukfisi.com/` (Cloudflare Registrar'dan alınan custom
-domain, GitHub Pages'e DNS ile bağlı — apex `CNAME` → `ercinnn.github.io`,
-`www` aynı şekilde, ikisi de Cloudflare'de "DNS only"/gri bulut).
-`https://ercinnn.github.io/muhasebe/` artık kullanılmıyor. Kod her
-değiştiğinde bu adım tekrar çalıştırılmadıkça site eski kalır.
+Canlı: `https://tahakkukfisi.com/` (Cloudflare Registrar domain, GitHub
+Pages'e DNS ile bağlı — apex+`www` CNAME → `ercinnn.github.io`, "DNS
+only"/gri bulut). `https://ercinnn.github.io/muhasebe/` artık kullanılmıyor.
+Kod değişince bu adım tekrar çalıştırılmadıkça site eski kalır.
 
 **gh-pages branch'i her deploy'da `rm -rf .git && git init` ile sıfırdan
 kuruluyor** — GitHub'ın custom domain için branch köküne yazdığı `CNAME`
-dosyası bu sıfırlamada silinir. `echo tahakkukfisi.com > build/web/CNAME`
-adımı bu yüzden deploy komutunun kalıcı bir parçası; atlanırsa bir sonraki
-deploy'da custom domain ayarı GitHub tarafında sessizce düşer (Settings →
-Pages'te tekrar boş görünür).
+dosyası bu sıfırlamada silinir, bu yüzden `echo tahakkukfisi.com >
+build/web/CNAME` deploy komutunun kalıcı bir parçası; atlanırsa custom
+domain ayarı GitHub tarafında sessizce düşer.
 
 Release APK proguard kuralı gerektiriyor (`android/app/proguard-rules.pro`
 + `build.gradle.kts`'teki `proguardFiles(...)`): `google_mlkit_text_recognition`
@@ -133,697 +124,264 @@ release build'i reddeder.
   `.then()`/`await` ile tetiklenir. Fire-and-forget
   `onPressed: () => repo.markPaid(id)` HİÇBİR ŞEY YAPMAZ; her zaman
   `onPressed: () async { await repo.markPaid(id); }`.
-- **Riverpod keepAlive** — provider async iş bitene kadar veya uzun ömürlü
-  stream/listener tutuyorsa `@Riverpod(keepAlive: true)` olmalı, aksi halde
-  autodispose provider'da "Cannot use the Ref after it has been disposed"
-  hatası çıkar (bkz. `fcmServiceProvider`). İkinci somut örnek:
-  `documentActionsProvider` — hiçbir widget'ta `ref.watch` edilmiyor, sadece
-  `onPressed` içinde anlık `ref.read(...).notifier` ile çağrılıyordu; birden
-  fazla `await`'li `markPaid()` çalışırken provider disposed oluyor ve
-  hata sessizce yutuluyordu (belge detayındaki "Ödendi" butonu asla
-  güncellenmiyordu, sadece ekrandan çıkıp girince düzeliyordu — gerçek
-  cihazda glass-restyle testi sırasında bulundu). `keepAlive: true` çözdü.
+- **Riverpod keepAlive** — provider hiçbir widget'ta `ref.watch` edilmeden
+  sadece `onPressed` içinde `ref.read(...).notifier` ile çağrılıyorsa,
+  autodispose altında birden fazla `await`'li çağrı sırasında provider
+  disposed olup hata sessizce yutulabilir (`fcmServiceProvider`,
+  `documentActionsProvider`'da yaşandı — "Ödendi" butonu güncellenmiyordu).
+  `@Riverpod(keepAlive: true)` çözer.
 - **Realtime**: `documents` tablosu `supabase_realtime` publication'a
   eklenmeli (`alter publication supabase_realtime add table public.documents;`)
   yoksa `.stream()` `RealtimeSubscribeException` fırlatır.
 - **flutter_local_notifications + Android**: core library desugaring
   gerektirir (`isCoreLibraryDesugaringEnabled = true` + dep).
-- **Android bildirim kanalları immutable** — bir kanal ID'si bir kere
-  oluşturulunca ses/önem ayarı cihazda kilitlenir; kod tarafında ayarı
-  değiştirmek yetmez, kanal ID'sini değiştirip (`payment_reminders_v2`
-  gibi) yeni bir kanal oluşturmak gerekir.
+- **Android bildirim kanalları immutable** — bir kanal ID'si oluşunca
+  ses/önem ayarı cihazda kilitlenir; kod tarafında ayarı değiştirmek
+  yetmez, kanal ID'sini değiştirip (`payment_reminders_v2` gibi) yeni bir
+  kanal oluşturmak gerekir.
 - **Orphan Gradle daemon'lar** — Android build sonrası kalan `java.exe`
   process'leri (2.5GB+ bellek) sonraki build'leri yavaşlatabilir; donma
-  şüphesinde `tasklist | grep -iE "dart|java"` kontrol et, regresyon
-  varsaymadan önce.
-- **adb + Git Bash/MSYS path mangling** — `/sdcard/...` ve
-  `--base-href /muhasebe/` gibi `/`-başlayan argümanlar mangle edilir
-  (`C:/Program Files/Git/...` olur); `MSYS_NO_PATHCONV=1` prefix'i veya
-  çift-slash (`//sdcard/...`) kullan. Ekran koordinatları için
-  `adb shell uiautomator dump` ile `bounds="[x1,y1][x2,y2]"` oku.
+  şüphesinde `tasklist | grep -iE "dart|java"` kontrol et.
+- **adb + Git Bash/MSYS path mangling** — `/sdcard/...` gibi `/`-başlayan
+  argümanlar mangle edilir; `MSYS_NO_PATHCONV=1` prefix'i veya çift-slash
+  (`//sdcard/...`) kullan. Ekran koordinatları için `adb shell uiautomator
+  dump` ile `bounds="[x1,y1][x2,y2]"` oku.
 - **Gerçek GİB/SGK PDF'leri "etiket: değer" formatında DEĞİL** — pdfrx
   metni her formda önce TÜM etiketleri sonra TÜM değerleri ayrı bloklar
   halinde çıkarıyor (görsel sütun sırasına göre, etiket sırasına göre
   DEĞİL). Bu yüzden `label_extraction.dart`'taki extraction fonksiyonları
-  (`extractTaxPeriod`, `extractEarliestRowDueDate`, `extractFisNo`,
-  `extractLastAmount`, `extractSgkBildirgePersonName`) etiket aramak yerine
   regex/pozisyon tabanlı çalışıyor. Yeni bir belge türü/varyantı eklerken
-  önce PDF'i `Read` tool'uyla oku, varsayımla fixture yazma. Not: gerçek
-  kişi (şirket değil) mükelleflerde "SOYADI (ÜNVANI)" Türkçe `Ü` ile
-  basılıyor (ASCII `U` değil) — `personName` artık `ADI` + bu alanı
-  birleştiriyor.
+  önce PDF'i `Read` tool'uyla oku, varsayımla fixture yazma. Gerçek kişi
+  (şirket değil) mükelleflerde "SOYADI (ÜNVANI)" Türkçe `Ü` ile basılıyor
+  (ASCII `U` değil).
 - **pg_net webhook'ları Supabase gateway'inde varsayılan 401 alır** — bir
   DB trigger'ının `net.http_post` ile çağırdığı Edge Function'da kullanıcı
-  JWT'si yoksa (server-to-server, kendi `x-webhook-secret` kontrolü var),
-  Supabase'in varsayılan `verify_jwt = true` isteği fonksiyona hiç
-  ulaştırmadan `401 UNAUTHORIZED_NO_AUTH_HEADER` ile reddeder. Çözüm:
-  `supabase/config.toml`'da `[functions.X]` altında `verify_jwt = false` +
-  `supabase functions deploy X --no-verify-jwt`. Hata Edge Function
-  loglarında değil `net._http_response` tablosunda görülür.
+  JWT'si yoksa, Supabase'in varsayılan `verify_jwt = true` isteği
+  fonksiyona hiç ulaştırmadan `401 UNAUTHORIZED_NO_AUTH_HEADER` ile
+  reddeder. Çözüm: `supabase/config.toml`'da `[functions.X]` altında
+  `verify_jwt = false` + `supabase functions deploy X --no-verify-jwt`.
+  Hata Edge Function loglarında değil `net._http_response` tablosunda
+  görülür.
 - **Debug**: `npx --yes supabase@latest db query --linked "SELECT ..."` ile
   linked projeye Management API üzerinden SQL çalıştırılabilir (DB şifresi
-  gerekmez, eski CLI'da yerleşik `db query` yok). Webhook debug için en
-  değerli tablolar: `net._http_response` (her pg_net isteğinin gerçek
-  status/body'si) ve `vault.decrypted_secrets`. 2026-09-12'de bu CLI komutu
-  kullanıcının makinesinde sürekli çıktısız kaldı (yalnızca "Initialising
-  login role..." yazıp prompt'a dönüyordu, basit `select count(*)` için
-  bile) — sebebi netleşmedi, muhtemelen yerel bir terminal/CLI sorunu;
-  Supabase Dashboard'un SQL Editor'ü üzerinden çalıştırmak güvenilir
-  alternatif oldu.
+  gerekmez). Webhook debug için en değerli tablolar: `net._http_response`
+  (her pg_net isteğinin gerçek status/body'si) ve `vault.decrypted_secrets`.
+  Bazen bu CLI komutu çıktısız takılabiliyor (sebep netleşmedi) — Supabase
+  Dashboard SQL Editor güvenilir alternatif.
 - **Supabase Dashboard SQL Editor'de Monaco editörüne native tıklama/yazma
-  bazen hiç focus almıyor** (`ctrl+a` tüm sayfayı seçiyor, yazılan hiçbir
-  karakter editöre gitmiyor, sekmedeki placeholder metni değişmeden
-  kalıyor) — özellikle Disk IO Budget throttling'i altındaki bu projede
-  editör yükleme sonrası bir süre tepkisiz kalabiliyor. Kesin çözüm:
-  `window.monaco.editor.getModels()[0].setValue("...")` ile sorguyu
-  doğrudan Monaco'nun model API'siyle set etmek (React state'i
-  `onDidChangeModelContent` ile senkronize oluyor), ardından Run butonuna
-  `ref` tabanlı tıklamak — koordinat tabanlı tıklama viewport/screenshot
-  boyut uyuşmazlığı yüzünden (bu oturumda 1568×652 screenshot'a karşılık
-  2304×958 gerçek viewport) yanlış yere gidebiliyor. `setValue()`'dan hemen
-  sonra Run'a tıklamak bazen state güncellenmeden çalışıyor (eski sorgu
-  çalışıyor) — aradan bir-iki tool-call/tur geçmesini beklemek yeterli
-  oluyor.
-- **Meta Business Manager'da template/mesaj editörü iki ayrı yazı
-  tuzağı içeriyor** (2026-09'da `belge_bildirimi_odeme`/`belge_bildirimi_bilgi`
-  template'leri oluşturulurken bulundu): (1) `{{` yazınca editör otomatik
-  eşleşen `}}` ekliyor — `{{1}}` gibi bir değişkeni tek seferde yazmaya
-  çalışmak `{{1}}1}}` gibi çift kapanışa yol açıyor; doğru yöntem `{{`'ye
-  kadar yazıp otomatik eklenen `}}`'nin ötesine `End` ile atlamak, sonra
-  bir sonraki metin parçasına geçmek. (2) Her ayrı `type()` çağrısının
-  sonunda bırakılan boşluk, bir sonraki ekleme/buton tıklamasından hemen
-  önce editör tarafından kırpılıyor (`"Sayın {{1}}"` yerine `"Sayın{{1}}"`
-  gibi kelimeler bitişik çıkıyor) — çözüm: boşluğu önceki parçanın sonuna
-  değil, bir sonraki parçanın **başına** koymak (baştaki boşluk korunuyor).
-- **Meta App Dashboard'daki WhatsApp kurulum sihirbazının "Generate
-  token" butonu arayüzde bozuk görünüyor** ("Not generated yet" yazısı
-  tekrar tıklansa da, sayfa yenilense de değişmiyor) — Graph API Explorer
-  (developers.facebook.com/tools/explorer) ile doğrulandı: token aslında
-  her denemede gerçekten üretiliyor, sadece bu widget'ın kendi durum
-  göstergesi güncellenmiyor. Bunun yan etkisi: her başarısız görünen
-  deneme aslında yeni bir test WABA'sı ("Test WhatsApp Business Account")
-  yaratıyor — OAuth onay ekranında 3 tane duplicate test WABA görünmesinin
-  sebebi buydu.
-- **Meta System User adı sıkı bir format bekliyor** — tire içeren
-  (`muhasebe-takip-whatsapp`) ve boşluklu (`muhasebe takip whatsapp`)
-  adlar "Profil adları çok fazla tire içeremez" / "Geçersiz bir Sistem
-  Kullanıcısı adı seçtiniz" hatasıyla reddedildi; tek kelimelik CamelCase
-  (`WhatsappEntegrasyonu`) kabul edildi.
+  bazen hiç focus almıyor** (özellikle Disk IO Budget throttling altında).
+  Çözüm: `window.monaco.editor.getModels()[0].setValue("...")` ile sorguyu
+  doğrudan Monaco model API'siyle set et, sonra Run'a `ref` tabanlı tıkla
+  (koordinat tabanlı tıklama viewport/screenshot boyut uyuşmazlığından
+  yanlış yere gidebilir). `setValue()`'dan hemen sonra Run'a tıklamak
+  bazen eski sorguyu çalıştırır — bir-iki tur beklemek yeterli.
+- **Meta Business Manager template/mesaj editörü iki yazı tuzağı
+  içeriyor**: (1) `{{` yazınca editör otomatik `}}` ekliyor — `{{1}}` gibi
+  bir değişkeni tek seferde yazmak `{{1}}1}}` gibi çift kapanışa yol açar;
+  doğrusu `{{`'ye kadar yazıp `End` ile otomatik `}}`'nin ötesine atlamak.
+  (2) Her `type()` çağrısının sonundaki boşluk bir sonraki eklemeden önce
+  kırpılıyor — boşluğu önceki parçanın sonuna değil, sonraki parçanın
+  **başına** koy.
+- **Meta App Dashboard'daki "Generate token" butonu arayüzde bozuk
+  görünüyor** ("Not generated yet" hiç değişmez) ama token gerçekten
+  üretiliyor (Graph API Explorer ile doğrulanabilir) — widget'ın kendi
+  durum göstergesi güncellenmiyor sadece. Yan etki: her "başarısız"
+  görünen deneme yeni bir test WABA'sı yaratıyor (OAuth ekranında
+  duplicate test WABA'lar buradan gelir).
+- **Meta System User adı sıkı bir format bekliyor** — tire/boşluk içeren
+  adlar reddedilir; tek kelimelik CamelCase (`WhatsappEntegrasyonu`)
+  kabul edildi.
 - **Meta'nın "(#132001) Template name does not exist in the translation"
   hatası template'in var olmamasından değil, gönderen kimliğin template'i
-  GÖREMEMESİNDEN de kaynaklanabilir** — 2026-09-13'te `belge_bildirimi_odeme`
-  hem şablon listesinde APPROVED/`tr` görünüyor hem doğru WABA/telefon
-  numarasıyla eşleşiyorken System User (`WhatsappEntegrasyonu`) token'ıyla
-  gönderim ısrarla bu hatayla başarısız oluyordu; kişisel kullanıcı
-  token'ıyla (Graph API Explorer) aynı istek anında başarılı oldu. Kök
-  neden: Business Settings → Sistem kullanıcıları → ilgili WhatsApp hesabı
-  → **Yönet**'teki "Atamaları yönet" panelinde System User'a yalnızca
-  "Mesajlar" (gönder/yanıtla) izni verilmişti, "Mesaj şablonları (sadece
-  görüntüleme)" hiç açık değildi — WhatsApp Hesapları listesindeki özet
-  etiket ("Kısmi erişim (... and Mesajlar)") bu eksikliği göstermiyor,
-  yalnızca bu panel gösteriyor. İzni açmak yetti, token'ı yeniden üretmeye
-  gerek kalmadı (Meta izinleri her istekte canlı kontrol ediyor). Ayrıca
-  bu debug sürecinde ayrı bir sorun daha bulundu: Edge Function'daki sabit
-  `WHATSAPP_GRAPH_API_VERSION` hâlâ `v21.0`'dı (muhtemelen sunset/eski),
-  `v26.0`'a güncellendi — iki sorun da birlikte giderilmeden gönderim
-  çalışmadı.
+  GÖREMEMESİNDEN de kaynaklanabilir** — template APPROVED/doğru dilde ve
+  doğru WABA/telefon numarasıyla eşleşse bile, System User'ın o WhatsApp
+  hesabı için sadece "Mesajlar" (gönder/yanıtla) izni olup "Mesaj
+  şablonları (sadece görüntüleme)" izni yoksa aynı hatayı verir — Business
+  Settings → Sistem kullanıcıları → WhatsApp hesabı → **Yönet**'teki
+  "Atamaları yönet" panelinden kontrol et (WhatsApp Hesapları listesindeki
+  özet etiket bu eksikliği göstermez). İzni açmak yeter, token yeniden
+  üretmeye gerek yok (Meta izinleri her istekte canlı kontrol ediyor). Ayrı
+  bir olası neden: Edge Function'daki sabit `WHATSAPP_GRAPH_API_VERSION`
+  eski/sunset bir sürüm olabilir — güncel tut.
 - **Push data-only, arka plan isolate'i kendi başına eksik** — FCM mesajı
   sessiz bir data payload'ı, uygulama kendi bildirimini kendi gösteriyor
   (`fcm_service.dart` foreground / `fcm_background_handler.dart` arka
-  plan). Arka plan isolate `bootstrap()`'ı hiç çalıştırmaz, kendi
-  başına init etmesi gerekenler:
+  plan). Arka plan isolate `bootstrap()`'ı hiç çalıştırmaz:
   - `tz_data.initializeTimeZones()` + `tz.setLocalLocation(getLocation('Europe/Istanbul'))`
-    çağrılmazsa `tz.local` `LateInitializationError` fırlatır (ya da hiç
-    çağrılmamışsa varsayılan UTC'ye düşüp hatırlatmalar 3 saat geç kurulur).
+    çağrılmazsa `tz.local` `LateInitializationError` fırlatır (ya da UTC'ye
+    düşüp hatırlatmalar 3 saat geç kurulur).
   - `NotificationService.init()` içindeki
     `requestNotificationsPermission()` bir Activity gerektirir — headless
-    isolate'te native `NullPointerException` fırlatıp `init()`'i (ve
-    dolayısıyla bildirimi) hiç göstermeden patlatır. Arka planda
+    isolate'te native `NullPointerException` fırlatır. Arka planda
     `init(requestPermission: false)` ile atlanmalı.
-  - `_scheduleAt` geçmiş bir tarih için hiçbir şey planlamaz (`if
-    (scheduled.isBefore(now)) return;`) — `due_date` geçmişte olan bir test
-    belgesinde anlık "Belge Geldi" bildirimi gelir ama vade hatırlatması
-    hiç planlanmaz.
+  - `_scheduleAt` geçmiş bir tarih için hiçbir şey planlamaz — geçmiş
+    `due_date`'li bir test belgesinde anlık bildirim gelir ama vade
+    hatırlatması hiç planlanmaz.
 - **Türkçe karakterli test PDF'i üretme** — `reportlab` ile sentetik PDF
   üretilebilir ama standart fontlar (Helvetica/WinAnsi) `İ ı Ş ş Ğ ğ`
   içermez; `pdfmetrics.registerFont(TTFont(...))` ile
   `C:/Windows/Fonts/arial.ttf` gömülmeli (Identity-H/Unicode CMap). pdfrx
-  metni content stream sırasına göre çıkarır (görsel pozisyona göre
-  değil), yani fixture taklidi yaparken satır sırası yeterli, x/y önemsiz.
+  metni content stream sırasına göre çıkarır, fixture'da satır sırası
+  yeterli, x/y önemsiz.
 - **Supabase PKCE code_verifier, isteği başlatan storage'a bağlı** —
-  `resetPasswordForEmail` çağrıldığı yerin (web origin'i ya da mobil
-  uygulamanın local storage'ı) dışında bir yerde recovery linkine
-  tıklanırsa `AuthException(Code verifier could not be found in local
-  storage)` ile sessizce başarısız olur (kullanıcı sadece o context'te
-  zaten var olan eski oturuma düşer, hata görmez). Bu yüzden mobilde
-  `password_reset_controller.dart`, `redirectTo`'yu web'de dinamik origin,
-  mobilde `muhasebetakip://reset-password` custom scheme olarak ayarlıyor
-  (AndroidManifest.xml intent-filter + iOS Info.plist
-  `CFBundleURLTypes`) — link her zaman isteği başlatan app/browser
-  context'ine geri döner. Supabase Dashboard → Authentication → URL
-  Configuration → Redirect URLs listesine `muhasebetakip://**` de
-  eklenmeli, yoksa aynı sessiz-fallback davranışı (bkz. Site URL gotcha'sı)
-  tekrarlanır.
-- **Google OAuth ile `handle_new_user` trigger'ı çakışırdı, şimdi ayrıştı**
-  — trigger eskiden her `auth.users` insert'inde koşup client için davet
-  kodu yoksa `raise exception` atıyordu; bu, e-posta/şifre `signUp()`
-  çağrılarımız için doğruydu (`data:` içinde her zaman `role` gönderiyoruz)
-  ama Google'ın OAuth callback'i de `auth.users`'a insert yapıyor ve onun
-  metadata'sında `role` yok — trigger insert'i tamamen iptal ediyor,
-  kullanıcı uygulamaya hiç ulaşamadan patlıyordu. Çözüm
-  (`20260730140000_google_oauth_signup.sql`): trigger artık yalnızca
-  `raw_user_meta_data` içinde `role` anahtarı varsa (yani bizim kontrollü
-  `signUp()` çağrılarımızdan geliyorsa) profil oluşturuyor; Google girişi
-  oturumla ama profilsiz iniyor, `app_router.dart`'taki `resolveRedirect`
-  bunu `hasSession && user == null` ile yakalayıp `/complete-signup`'a
-  yönlendiriyor (`CompleteSignupScreen` rol/isim/davet kodu topluyor,
-  `complete_oauth_signup` RPC'si aynı davet kodu doğrulamasını
-  `auth.uid()` ile tekrar yapıyor). Aynı e-postayla önceden e-posta/şifre
-  hesabı olan biri Google ile girerse Supabase kimlikleri otomatik
-  birleştiriyor — bu durumda profil zaten var, `/complete-signup`
-  atlanıyor.
-- **`signInWithOAuth`/`signUp` mobil redirect'i de PKCE gotcha'sına tabi**
-  — `AuthController._authRedirectTo` aynı web-origin-vs-custom-scheme
-  ayrımını (`password_reset_controller`'daki gibi) Google girişi ve
-  e-posta onay linki için de kullanıyor (`muhasebetakip://login-callback`).
-  AndroidManifest'teki `muhasebetakip` intent-filter'ı path'siz/genel
-  olduğu için (bkz. şifre sıfırlama), ayrı bir path/manifest girişi
-  gerekmedi.
+  `resetPasswordForEmail`/OAuth/email-onay linkleri başlatıldığı yerin
+  (web origin'i ya da mobil local storage'ı) dışında bir yerde açılırsa
+  `AuthException(Code verifier could not be found)` ile sessizce
+  başarısız olur. Çözüm: `redirectTo`'yu web'de dinamik origin, mobilde
+  `muhasebetakip://...` custom scheme olarak ayarlamak (AndroidManifest
+  intent-filter + iOS `CFBundleURLTypes`), ve Supabase Dashboard →
+  Authentication → URL Configuration'a `muhasebetakip://**`'i eklemek —
+  atlanırsa aynı sessiz-fallback tekrarlanır.
+- **Google OAuth ile `handle_new_user` trigger'ı çakışırdı** — trigger her
+  `auth.users` insert'inde `role` metadata'sı yoksa exception atıyordu; bu
+  e-posta/şifre `signUp()` için doğruydu ama Google OAuth callback'inin
+  metadata'sında `role` olmadığından insert'i tamamen iptal ediyordu.
+  Çözüm (`20260730140000_google_oauth_signup.sql`): trigger yalnızca
+  `role` varsa profil oluşturur; Google girişi profilsiz iner,
+  `resolveRedirect` bunu `hasSession && user == null` ile yakalayıp
+  `/complete-signup`'a yönlendirir (`complete_oauth_signup` RPC davet
+  kodunu `auth.uid()` ile tekrar doğrular). Aynı e-postayla önceden
+  e-posta/şifre hesabı olan biri Google ile girerse kimlikler otomatik
+  birleşir.
 - **E-posta onayı + şifre politikası iki yerde tanımlı, birlikte
-  değişmeli** — Supabase Auth'un min uzunluk/karakter kuralı ve "Confirm
-  email" anahtarı Dashboard'da (`Authentication → Providers → Email`)
-  ayarlanıyor; `supabase/config.toml`'daki `[auth]`/`[auth.email]` aynı
-  değerleri yalnızca yerel `supabase start` için taşıyor, hosted projeye
-  otomatik yansımıyor (`supabase config push` tüm `config.toml`'u
-  gönderiyor, dosyadaki `site_url`/`additional_redirect_urls` hâlâ
-  `127.0.0.1` olduğu için bunu çalıştırmak production redirect URL'lerini
-  sessizce ezip auth'u kırardı — bilerek kullanılmadı). İstemci tarafı
-  aynı kuralı `lib/features/auth/domain/password_policy.dart`'ta
-  ayrıca doğruluyor (sunucu reddinden önce anlık geri bildirim için).
-  Resend, Supabase'in SMTP Settings'inde custom SMTP olarak devrede.
-- **Claude Code'un Bash tool'undan `flutter run -d web-server` başlatılırken
-  stdin `/dev/null`'a bağlanıyor** — bu yüzden terminaldeki `r`/`R` hot
-  reload/restart tuşları çalışmaz (basılamaz). Kaynak değişikliğini
-  tarayıcıya yansıtmanın tek yolu: portu dinleyen process'i (`netstat -ano
-  | grep :PORT` → PID → `Get-CimInstance Win32_Process` ile
-  `flutter_tools.snapshot ... run -d web-server` komut satırına sahip
-  dart.exe PID'i bul) `taskkill /PID <pid> /T /F` ile öldürüp aynı portta
-  yeniden `flutter run -d web-server --web-port=<port> ...` başlatmak.
-  Tarayıcı sekmesini aynı origin'e (`http://localhost:<port>`) yeniden
-  navigate edince Supabase oturumu (localStorage'da persist ediliyor)
-  korunuyor, yeniden login gerekmiyor.
+  değişmeli** — Supabase Dashboard (`Authentication → Providers → Email`)
+  hosted projeyi kontrol eder; `supabase/config.toml`'daki `[auth]` yalnızca
+  yerel `supabase start` içindir, `supabase config push` çalıştırmak
+  `site_url`/redirect URL'lerini production'ı kıracak şekilde ezer —
+  bilerek kullanılmıyor. İstemci tarafı aynı kuralı
+  `password_policy.dart`'ta ayrıca doğruluyor. Resend, custom SMTP olarak
+  devrede.
+- **Claude Code'un Bash tool'undan `flutter run -d web-server`
+  başlatılırken stdin `/dev/null`'a bağlanıyor** — terminaldeki `r`/`R`
+  hot reload tuşları çalışmaz. Kaynak değişikliğini yansıtmak için: portu
+  dinleyen `dart.exe` PID'ini (`netstat -ano` → `Get-CimInstance
+  Win32_Process`) `taskkill /PID <pid> /T /F` ile öldürüp aynı portta
+  yeniden başlat — aynı origin'e navigate edince Supabase oturumu
+  (localStorage) korunur.
 - **`flutter run -d web-server` sayfası bazen sonsuza kadar beyaz kalır,
-  hata vermeden** — DDC modül yükleyicisi (`ddc_module_loader.js`) tüm
-  script tag'lerini (bu projede ~1600 modül) baştan DOM'a ekliyor ama
-  gerçek derleme `frontend_server_aot.dart.snapshot` alt sürecinde
-  (flutter tool'un çocuğu) oluyor; bu alt süreç kaynak yetersizliğinde
-  (aynı anda çalışan orphan Gradle daemon'ları, birden fazla `flutter run`
-  denemesi vb.) sessizce ölürse, ana `flutter run` process'i hâlâ ayakta
-  kalıp portu dinlemeye devam ediyor, tarayıcı bağlantıları
-  `ESTABLISHED` kalıyor ama hiçbir modül asla gelmiyor — konsolda hata
-  yok, `flutter run` log'unda da yeni satır yok. Teşhis: tarayıcıda
-  `performance.getEntriesByType('resource').length` birkaç kontrol
-  arasında hiç artmıyorsa (gerçek yavaşlıkta artmaya devam eder) ve
-  derleyici PID'si (`Get-CimInstance Win32_Process` ile `frontend_server`
-  komut satırını taşıyan `dartaotruntime.exe`) `tasklist`'te yoksa, süreç
-  ölmüştür — tek çözüm `taskkill /F /T` ile tüm `flutter run` ağacını
-  öldürüp portu sıfırdan başlatmak. Önlem: build/test/analyze gibi ağır
-  komutları aynı anda bir `flutter run -d web-server` ile paralel
-  çalıştırmaktan kaçın, orphan Gradle daemon'larını temizle (yukarıdaki
-  madde). 2026-08-02: `taskkill` + yeniden başlatma bir kez işe yaramadı
-  (aynı beyaz sayfa, `performance.getEntriesByType('resource').length`
-  yine sabit) — `flutter run` log'u da "The web-server device requires
-  the Dart Debug Chrome extension for debugging" uyarısı veriyordu; bu
-  uzantı olmayan bir tarayıcıda (ör. claude-in-chrome) DWDS debug bağlantısı
-  hiç kurulamayıp modül yüklemesi kalıcı olarak takılı kalabiliyor. Kesin
-  çözüm: `MSYS_NO_PATHCONV=1 flutter build web --dart-define-from-file=env/dev.json
-  --base-href /` ile statik bir release build alıp `python -m http.server
-  <port>` gibi sade bir dosya sunucusuyla servis etmek — DWDS/debug
-  bağlantısına hiç ihtiyaç duymadığından bu senaryoda güvenilir çalışıyor.
+  hata vermeden** — özellikle Dart Debug Chrome uzantısı olmayan bir
+  tarayıcıda (ör. claude-in-chrome) DWDS debug bağlantısı hiç kurulamayıp
+  modül yüklemesi kalıcı takılabiliyor ("The web-server device requires
+  the Dart Debug Chrome extension" uyarısı log'da görülür). Teşhis:
+  tarayıcıda `performance.getEntriesByType('resource').length` birkaç
+  kontrol arasında artmıyorsa süreç ölmüştür. Kesin çözüm: DWDS'e hiç
+  ihtiyaç duymayan statik bir release build al (`MSYS_NO_PATHCONV=1
+  flutter build web --dart-define-from-file=env/dev.json --base-href /`)
+  ve `python -m http.server <port>` gibi sade bir dosya sunucusuyla
+  servis et.
 - **`delete_own_account` gerçek `auth.users`'ı silmiyor, bilinçli kabul
   edilmiş bir açık bırakıyor** — hesap "silindiğinde" yalnızca
-  `profiles.deleted_at` set edilip `full_name` anonimleştiriliyor
-  (`20260731150000_account_freeze_delete.sql`); `auth.users` satırı ve
-  dolayısıyla oturum/refresh token hemen geçersiz olmuyor (bkz. o
-  migration'ın yorumundaki cascade-delete gerekçesi). `resolveRedirect`
-  bunu yalnızca **uygulama içi** yönlendirme ile engelliyor —
-  `mark_document_paid` gibi mevcut RPC'lerde veya `documents`/storage RLS
-  politikalarında `deleted_at is null` kontrolü yok. Yani "silinmiş" bir
-  hesabın çalınmış/sızıntı bir token'ı, token süresi dolana kadar
-  documents/storage'ı kullanmaya devam edebilir — 2026-07-31'de
-  `/security-review` ile bulundu, bilerek (henüz) düzeltilmedi; ileride
-  ana RPC'lere `deleted_at is null` kontrolü eklemek bir seçenek.
+  `profiles.deleted_at` set edilip isim anonimleştiriliyor; `auth.users`
+  satırı hemen geçersiz olmuyor. `resolveRedirect` bunu yalnızca
+  **uygulama içi** yönlendirmeyle engelliyor — RPC'lerde/RLS'de
+  `deleted_at is null` kontrolü yok, yani çalınmış bir token süresi
+  dolana kadar kullanılabilir. Bilerek düzeltilmedi; ileride ana RPC'lere
+  bu kontrolü eklemek bir seçenek.
 - **`USE_EXACT_ALARM` Play politikasında "çalar saat/takvim" olmayan
-  uygulamalar için uygun değil** — `flutter_local_notifications`'ın vade
-  hatırlatmaları için eklediği `AndroidManifest.xml` izni
-  (`SCHEDULE_EXACT_ALARM`'ın yanına) Play Console'da "Tam alarmlar"
-  beyanında uygulamanın temel işlevinin çalar saat/takvim olduğunu
-  beyan etmeyi gerektiriyordu — bizimki belge takip uygulaması, bu
-  gerçeği yansıtmayan bir beyan reddedilme/kaldırılma riski taşırdı.
-  2026-08-05'te kaldırıldı, yalnızca `SCHEDULE_EXACT_ALARM` kaldı (daha
-  az kısıtlayıcı, Android 12+'ta kullanıcı onayı gerektirir ama
-  uygulama zaten bunu native olarak yönetiyor) — bu beyanı Play
-  Console'dan tamamen düşürdü, versionCode 3'e yeniden derlenip
-  Internal + Closed testing'e yeniden yüklendi.
+  uygulamalar için uygun değil** — bu izin Play Console'da "temel işlev
+  çalar saat/takvim" beyanı gerektiriyordu, kaldırıldı; yalnızca daha az
+  kısıtlayıcı `SCHEDULE_EXACT_ALARM` kaldı.
 - **Play Console'da bir per-item dialog'un kendi "Kaydet"i yalnızca
   session state'e yazıyor, sunucuya değil** — Veri güvenliği/Uygulama
-  içeriği gibi çok adımlı formlarda her veri türü/soru için açılan
-  modal'ı "Kaydet" ile kapatmak yeterli değil; sayfa yenilenmeden ya da
-  başka bir sekmeye geçmeden önce üstteki `⋮` (Diğer seçenekler) menüsünden
+  içeriği gibi formlarda modal'ı kapatmak yetmez, üstteki `⋮` menüsünden
   ayrıca "Taslağı kaydet" yapılmazsa ilerleme sessizce kaybolur (reload
-  sonrası "Başlamadı"ya döner). Aynı sebeple bazı grid hücrelerindeki
-  "X sorularını aç" butonları `read_page`/`find` ile alınan taze bir
-  `ref` gerektiriyor — koordinat tıklaması veya bayat `ref` çoğu zaman
-  hiçbir şey açmıyor (sessizce no-op).
-- **Yeni (13 Kasım 2023 sonrası oluşturulan) kişisel geliştirici
-  hesapları için "Uygulamayı incelemeye gönder" kilidi, Internal
-  testing'in kendisiyle değil Closed testing zorunluluğuyla ilgili** —
-  Yayın özeti sayfasındaki gönder butonu "kontrol panelindeki gerekli
-  adımları tamamlayın" gibi belirsiz bir mesajla kilitli kalıyor;
-  Kontrol paneli/Mağaza ayarları/Uygulama içeriği/Android geliştirici
-  doğrulaması/Politika durumu sayfalarının hepsi tamamlanmış görünse
-  bile buton açılmıyor. Gerçek sebep:
-  support.google.com/googleplay/android-developer/answer/14151465 —
-  bu hesap sınıfı Production'a geçmeden önce en az **12 test
-  kullanıcısıyla en az 14 gün kesintisiz** Closed testing yapılmasını
-  şart koşuyor; bu şart karşılanana kadar (Internal testing tek başına
-  yeterli değil) genel "incelemeye gönder" akışı da kilitli kalıyor. Bir
-  Closed testing kanalı oluşturup (Test edin ve yayınlayın → Kapalı
-  test → Kanal oluştur), aynı AAB'yi ekleyip (Kitaplıktan ekle — tekrar
-  yüklemeye gerek yok), en az bir ülke/bölge ve en az bir test kullanıcı
-  listesi atayınca kilit anında açıldı.
+  sonrası "Başlamadı"ya döner). Bazı grid butonları da taze bir
+  `read_page`/`find` `ref`'i gerektirir — bayat `ref` sessizce no-op olur.
+- **Yeni (13 Kasım 2023 sonrası oluşturulan) kişisel geliştirici hesapları
+  için "Uygulamayı incelemeye gönder" kilidi, Internal testing'in
+  kendisiyle değil Closed testing zorunluluğuyla ilgili** — buton
+  belirsiz bir mesajla kilitli kalır, gerçek sebep
+  (support.google.com/googleplay/android-developer/answer/14151465): bu
+  hesap sınıfı Production'a geçmeden önce en az **12 test kullanıcısıyla
+  en az 14 gün kesintisiz** Closed testing şart koşuyor. Bir Closed
+  testing kanalı oluşturup aynı AAB'yi ekleyip en az bir ülke + bir test
+  kullanıcı listesi atayınca kilit anında açılır.
+- **Meta Business Verification akışında bir reCAPTCHA adımı çıkabilir —
+  Claude Code bunu çözemez/atlayamaz**, kullanıcı kendisi tıklamalı.
+- **Bir kaynağı (telefon numarası, domain vb.) yeni bir entegrasyona
+  bağlamadan önce, o kaynağın halihazırda başka bir amaçla kullanılıp
+  kullanılmadığını erken sor** — WhatsApp Business Platform'a eklenen bir
+  telefon numarası, normal WhatsApp/WhatsApp Business **uygulamasından**
+  tamamen kopar. Bu çakışma, kullanıcıya numara kararı ilk gündeme
+  geldiğinde söylenmeliydi, Business Verification belgeleri
+  yüklendikten sonra değil.
 
 ## Durum
 
-7 faz tamamlandı: Supabase şema/RLS → auth/roller → sınıflandırma
-motoru+test → muhasebeci yükleme akışı → mükellef liste/takvim ekranları →
-mobil bildirim sistemi → web görsel bildirimler. Web build GitHub
-Pages'te yayında.
-
-Push bildirimleri uçtan uca doğrulandı (gerçek Samsung A51 cihazında):
-anlık "Belge Geldi" bildirimi her yeni belgede geliyor (uygulama tamamen
-kapalıyken de), ödeme belgelerinde ayrıca vade-1 gün/vade günü hatırlatması
-planlanıyor — bu akıştaki arka-plan bug'ları (izin isteği crash'i,
-timezone init eksikliği) düzeltildi (bkz. gotcha'lar). Vade hatırlatması
-artık alarm-stili (`payment_reminders_v2` kanalı, tam ekran + alarm sesi +
-max önem) — bu da gerçek cihazda doğrulandı (2026-07-27), sesli/tam ekran
-bildirim geliyor.
-
-Ödemeler/Bilgilendirme/Takvim kartlarında okunmadı göstergesi var
-(`seen_at`/`seenAt`, `payment_list_tile.dart` + `info_screen.dart`).
-
-Şifremi unuttum akışı eklendi ve hem web hem mobilde (gerçek Samsung A51
-cihazında, `muhasebetakip://` deep link ile) uçtan uca doğrulandı —
-gerçek şifre değişikliği + yeni şifreyle giriş dahil (2026-07-28). Bkz.
-PKCE code_verifier gotcha'sı.
-
-Mükellef ekranları (Ödemeler/Takvim/Bilgilendirme) Glassmorphism'e
-geçirildi: `lib/core/theme/glass_theme.dart` + `lib/core/widgets/glass_*`
-paylaşımlı bileşenler, gradient arka plan, toplam bekleyen tutar hero
-kartı, mikro etkileşimler (kaydırma aksiyonları, "Ödendi" onay animasyonu +
-titreşim, vade yaklaşınca nabız efekti, tüm ödemeler bitince confetti).
-Gerçek cihazda (Samsung A51) hem kaydırma performansı hem tüm
-etkileşimler doğrulandı (2026-07-28).
-
-Muhasebeci ekranları (Mükelleflerim/Belge Yükle/Gönderilenler) ve
-paylaşımlı belge detay ekranı da aynı Glassmorphism diline geçirildi
-(2026-07-29): `AccountantHomeScreen` artık `ClientHomeScreen` ile aynı
-transparent AppBar + `GradientScaffoldBackground` kabuk desenini
-kullanıyor; `ClientsScreen`/`UploadScreen`/`UploadDraftCard`/
-`SentDocumentsScreen` düz `Card`/`ListTile`/`DataTable`/`Chip`
-kullanımlarından `GlassCard`/`GlassSurface`/`StatusBadge` + merkezi
-urgency paletine geçti. `ShakeWrapper` artık `upload_draft_card.dart`'taki
-`_ErrorRow`'da kullanılıyor (`trigger: draft.errorMessage`).
-`document_detail_screen.dart` (hem muhasebeci hem mükellef tarafından
-kullanılan paylaşımlı ekran) rol-nötr tek bir glass stiline geçirildi —
-davranış değişmedi. Web'de (`flutter run -d web-server`, gerçek
-`cakalogluer@gmail.com` muhasebeci hesabıyla) uçtan uca görsel doğrulandı;
-gerçek cihazda ayrıca doğrulanmadı.
-
-Sınıflandırma motoru gerçek GİB/SGK belgeleriyle doğrulandı (bkz.
-gotcha'lar). SGK işe giriş/işten ayrılış tarih alanları tek örnekle test
-edildi — yeni örnekle tekrar kontrol edilmeli.
+Web (`tahakkukfisi.com`) production'da güncel, tüm ana akışlar
+(auth — davet kodu/e-posta+şifre/Google, sınıflandırma, upload,
+ödemeler/takvim/bilgilendirme, hesap dondurma/silme, WhatsApp switch'i)
+Glassmorphism tasarımıyla web'de uçtan uca doğrulandı. **2026-07-29'dan
+sonraki hiçbir özellik gerçek Android cihazda ayrıca doğrulanmadı** —
+yalnızca ilk mobil bildirim/glassmorphism/şifre sıfırlama turu (Samsung
+A51, Temmuz sonu) gerçek cihazda test edildi.
 
 Test hesapları: `muhasebeci.demo@example.com` / `mukellef.demo@example.com`
-(Supabase `auth.users`, şifre sıfırlandı — önceki konuşmaya bak). Gerçek
-cihaz testleri `cakalogluercin86@gmail.com` (mükellef) ile de yapıldı.
+(şifre `PlayReview2026!Fisi`) — birbirine bağlı muhasebeci/mükellef çifti,
+Play Store reviewer'lara da verildi. Gerçek kişisel hesap:
+`cakalogluer@gmail.com` (`role=client`, gerçek muhasebecisi
+`uuysall@gmail.com` — WhatsApp testleri için geçici olarak demo
+muhasebeciye bağlanıp sonra geri bağlandı, bkz. gotcha'lar).
 
-Reminder ayarları test için değiştirildi (days before = 1, hour = 0) —
-doğrulama tamamlandığı için varsayılana (`defaultReminderHour = 9`,
-`defaultReminderDaysBefore = 1`, `settings_repository.dart`) döndürülmeli.
+Sınıflandırma motoru gerçek GİB/SGK belgeleriyle doğrulandı (bkz.
+gotcha'lar). SGK işe giriş/işten ayrılış alanları tek örnekle test edildi,
+yeni örnekle tekrar kontrol edilmeli.
+
+Reminder ayarları (`defaultReminderHour=9`, `defaultReminderDaysBefore=1`,
+`settings_repository.dart`) varsayılan/doğru değerlerinde.
 
 Not: ikinci, bağımsız bir firma için kopyalama fikri gündemden kaldırıldı —
 tekrar gündeme gelmedikçe önerilmemeli.
 
-`documents` tablosundaki `documents_update_client`/`documents_update_accountant`
-RLS politikaları kaldırıldı (2026-07-29, migration
-`20260729120000_documents_update_rpc_only.sql`, canlıya uygulandı). Bunlar
-satır sahipliğini kontrol ediyordu ama sütun kısıtlaması yoktu — geçerli
-bir JWT'si olan biri PostgREST'e doğrudan istek atıp kendi belgesinin
-`amount`/`due_date`/`status` gibi alanlarını `mark_document_paid`
-RPC'sindeki kontrolleri atlayarak değiştirebilirdi. Uygulama zaten
-`documents`'a hiç ham `.update()` çağrısı yapmıyor (sadece `.insert()` ve
-`mark_document_paid`/`mark_document_seen` RPC'leri, ikisi de
-`security definer` olduğundan RLS'den etkilenmiyor) — davranış değişmedi,
-sadece kullanılmayan bir açık kapatıldı.
+**Play Store**: `com.tahakkukfisi.app`, "Nice Yazılım" geliştirici hesabı.
+Mağaza listesi/Data Safety/IARC tamamlandı, imzalı AAB (versionCode 3)
+Internal + Closed testing'e yüklendi, 14 değişiklik Google incelemesine
+gönderildi. Production'a geçiş **Closed testing'e en az 12 gerçek
+kullanıcının 14 gün kesintisiz katılımını** bekliyor (bkz. gotcha'lar),
+henüz tamamlanmadı.
 
-Tasarım tutarlılığı incelemesi (`design-reviewer` agent'ı, 2026-07-29)
-yapıldı ve bulunan 10 maddenin tamamı uygulandı. En büyüğü: auth ekranları
-(`login`/`signup`/`forgot_password`/`reset_password_screen.dart`) daha önce
-iki glass-restyle geçişine de dahil olmamıştı (stok `Scaffold`/`Center`) —
-artık diğer ekranlarla aynı `GradientScaffoldBackground` + `GlassCard`
-kalıbını kullanıyor. `settings_screen.dart` da glass diline geçti
-(`GlassCard` + `Theme.textTheme.titleLarge`). Diğerleri: `GlassStyle.
-secondaryTextColor` sabiti eklendi (`Colors.black54` tekrarları yerine —
-`payments_screen.dart`/`clients_screen.dart`/`sent_documents_screen.dart`);
-`upload_draft_card.dart`'taki durum etiketleri `Chip` yerine `StatusBadge`,
-"Gönderildi" ikonu `Colors.green` yerine `urgencyPaid`; takvim marker
-rengi artık `urgencyUpcoming`'i `urgencySoon`'dan ayırt ediyor (önceden
-ikisi de aynı turuncuydu); `calendar_screen.dart`/`info_screen.dart` boş
-durumları ve `payments_screen.dart`'taki yaklaşan-ödeme banner'ı
-`GlassCard`/`GlassSurface`'e taşındı; `document_detail_screen.dart` artık
-hardcoded `840` yerine `Breakpoints.rail` kullanıyor; 3 icon-only "kapat"
-butonuna `tooltip` eklendi. Web'de (`cakalogluer@gmail.com` muhasebeci,
-`cakalogluercin86@gmail.com` mükellef) görsel doğrulandı — takvimdeki
-soon/upcoming renk ayrımı ve yükleme taslak rozetleri hesapta yeterli veri
-olmadığından görsel doğrulanamadı, yalnızca kod incelemesiyle teyit edildi;
-gerçek cihazda hiçbiri ayrıca doğrulanmadı.
+**WhatsApp bildirimi**: Kod tamam, gerçek `documents` insert trigger'ıyla
+uçtan uca doğrulandı (WhatsApp + FCM push aynı anda, birbirini
+etkilemeden çalışıyor). `Ayarlar → Mükellef Bilgileri`'nde muhasebeci
+artık telefon + "WhatsApp bildirimi gönder" switch'ini uygulamadan
+yönetebiliyor. Şu an yalnızca Meta'nın ücretsiz **test numarasıyla**
+(`+1 555-604-1485`, yalnızca doğrulanmış test alıcısına — şu an sadece
+kullanıcının kendi numarası) çalışıyor. Gerçek numaraya geçiş için Meta
+Business Verification süreci başlatıldı (belgeler yüklendi, ~2 iş günü
+inceleme) ama **numara kararı askıda** — kullanıcının mevcut iş telefonu
+kişisel/başka iş için WhatsApp Business uygulamasıyla aktif kullanılıyor,
+bu numarayı WABA'ya bağlamak o kullanımı bozar (bkz. Backlog, gotcha'lar).
 
-Mükellef tarafına "Ödenenler" ekranı eklendi (2026-07-29): ödendi
-işaretlenen ödeme belgeleri `Ödemeler` listesinden çıkıp bu yeni sekmeye
-taşınıyor, ödeme tarihine (`paidAt`) göre en yeni en üstte sıralanıyor.
-`PaymentListTile` artık `status == paid` durumunda bir "Ödenmedi"
-butonu/swipe aksiyonu gösteriyor (`documentActionsProvider.markUnpaid`),
-bu da yeni `mark_document_unpaid` RPC'sini çağırıp belgeyi tekrar
-`pending`'e alıyor ve (varsa) vade hatırlatmasını yeniden planlıyor
-(`mark_document_paid`'in `cancelReminders`'ının simetriği). RPC migration
-(`20260729130000_mark_document_unpaid.sql`) canlı Supabase'e uygulandı.
-Web'de uçtan uca doğrulandı (deploy edildi); gerçek cihazda ayrıca
-doğrulanmadı.
+## Backlog
 
-Takvim ekranında (`calendar_screen.dart`) üç değişiklik (2026-07-29):
-`table_calendar`'ın varsayılan İngilizce format-toggle butonu ("2 weeks")
-`headerStyle: HeaderStyle(formatButtonVisible: false)` ile kaldırıldı;
-hafta artık Pazartesi'den başlıyor (`startingDayOfWeek:
-StartingDayOfWeek.monday`); Cumartesi/Pazar hücreleri ve başlıkları
-`urgencyOverdue` rengiyle (kırmızı) vurgulanıyor
-(`CalendarStyle.weekendDecoration`/`weekendTextStyle` +
-`DaysOfWeekStyle.weekendStyle`). Web'de doğrulandı. Not: "Çarşamba"
-kısaltması "Car" görünüyor (Ç harfi eksik) — `table_calendar`'ın Türkçe
-gün kısaltmalarıyla ilgili ayrı, önceden var olan bir sorun, henüz
-düzeltilmedi.
-
-Uygulama genelinde daha canlı bir renk paleti uygulandı (2026-07-29,
-tek kaynak `lib/core/theme/glass_theme.dart` — `ColorScheme.fromSeed`
-tüm Material3 rollerini, `appBackgroundGradient` her ekranın ortak
-arka planını, `urgency*` sabitleri durum rozeti/işaretleyici renklerini
-belirlediği için tek dosyadan tüm uygulamaya (web+mobil, muhasebeci+
-mükellef) yayılıyor): seed rengi donuk indigo `#4F5FE0`'dan canlı
-mor-mavi `#5B34F5`'e; arka plan gradyanı soluk pastel
-(`#EEF1FF`→`#E3E9FD`→`#DCEBFB`) yerine belirgin mor→mavi→nane yeşili
-(`#D8CCFF`→`#BFDDFF`→`#B9F3E4`); `urgencyPaid/Overdue/Soon/Upcoming`
-daha doygun tonlara çekildi (`urgencyNeutral` kasıtlı olarak düşük
-doygun bırakıldı). Web'de görsel doğrulandı ve deploy edildi; gerçek
-cihazda ayrıca doğrulanmadı.
-
-Play Store yayınına hazırlık (2026-07-30/31): gerçek uygulama ikonu
-(`tahakkuk_fisi.png` → `assets/icon/icon.png`, `flutter_launcher_icons`
-ile legacy+adaptive Android ikonları üretildi), `applicationId` →
-`com.tahakkukfisi.app`, release upload keystore + `build.gradle.kts`
-imzalama (bkz. gotcha'lar), `web/privacy.html` gizlilik politikası
-(deploy edildi, `https://tahakkukfisi.com/privacy.html` canlıda).
-`app-release.aab` ve `app-release.apk` derlendi, apksigner ile imza
-doğrulandı (`CN=Tahakkuk Fisi`, debug key değil). Play Console'da
-geliştirici hesabı/mağaza listesi/data safety formu/aab yükleme gibi asıl
-yayına alma adımları henüz yapılmadı (bkz. aşağıdaki Backlog).
-
-Google ile giriş eklendi (web + Android, Supabase OAuth ile — native
-`google_sign_in` SDK'sı kullanılmadı, bkz. gotcha'lar): hem mevcut
-e-posta/şifre hesabına bağlanma hem sıfırdan kayıt (yeni
-`CompleteSignupScreen` + `complete_oauth_signup` RPC) gerçek Google
-hesaplarıyla uçtan uca doğrulandı (web'de). Android'de ayrıca
-doğrulanmadı. Google Cloud Console OAuth consent screen'i hâlâ "Testing"
-modunda — yalnızca eklenen test kullanıcıları girebiliyor, "Publish App"
-yapılmadı.
-
-Şifre politikası sıkılaştırıldı (min 8 karakter + büyük/küçük harf/rakam,
-hem `password_policy.dart`'ta hem Supabase Dashboard'da) ve e-posta onayı
-(Resend SMTP üzerinden) açıldı — kayıt sonrası oturum verilmiyor, kullanıcı
-onay linkine tıklayana kadar `signInWithPassword` `email not confirmed`
-ile reddediyor; `signUp()` artık `emailRedirectTo` gönderiyor ve
-`AuthController.signUpAccountant/signUpClient` `bool` dönüp ekranın "check
-your inbox" mesajı göstermesini sağlıyor. Hepsi gerçek bir hesapla
-(`cakalogluer+onaytest@gmail.com`) uçtan uca doğrulandı.
-
-Yukarıdaki değişikliklerin tamamı commit'lenip `master`'a push edildi;
-mevcut CI (`.github/workflows/ci.yml`) yeşil (ilk push'ta unutulan
-`build_runner` yüzünden bir kez kırmızı oldu, bkz. gotcha'lar — ikinci
-commit'le düzeltildi).
-
-2026-07-31'de backlog'daki "Diğer" maddelerinin çoğu tamamlandı:
-adaptive icon foreground içeriği (`assets/icon/icon_foreground.png`)
-%66'dan %90'a çıkarıldı ve Android ikonları yeniden üretildi (kullanıcı
-yeni bir görsel yüklemedi, mevcut görsel yeniden ölçeklendi — dairesel
-maske önizlemesiyle kırpılma olmadığı doğrulandı); imzalı
-`app-release.apk` derlendi. Ayarlar sayfasına uygulama sürümü +
-geliştirici iletişim bilgisi eklendi (`package_info_plus`,
-`app_info_section.dart`). Hesap dondurma (geçici, geri alınabilir giriş
-engeli) ve hesap silme (soft-delete/anonimleştirme — `documents`
-tablosundaki cascade-delete nedeniyle gerçek `auth.users` silme kasıtlı
-olarak yapılmıyor, bkz. gotcha'lar) eklendi:
-`profiles.frozen_at`/`deleted_at` + `freeze_own_account`/
-`unfreeze_own_account`/`delete_own_account` RPC'leri, `resolveRedirect`'e
-yeni `/account-frozen`/`/account-deleted` dallanması, muhasebeci tarafına
-ilk kez bir Ayarlar sekmesi (`AccountantSettingsScreen`, iki alt sekme:
-Hesap + Mükellef Bilgileri) eklendi. Mükellef Bilgileri alt sekmesinde
-muhasebeci her mükellefi için telefon/adres/not girebiliyor
-(`client_contact_info` tablosu, yalnızca ilgili muhasebeci erişebiliyor).
-`/security-review` ile bulunan 2 gerçek RLS açığı (client_contact_info
-update politikasında eksik sahiplik kontrolü; frozen_at/deleted_at'ın RPC
-dışından ham `PATCH` ile değiştirilebilmesi) aynı gün kapatıldı. Tüm
-migration'lar canlı Supabase'e uygulandı; hiçbiri gerçek cihazda ayrıca
-doğrulanmadı (yalnızca web'de derleme/route testleriyle).
-
-2026-08-01: reminder saati Samsung A51 cihazında Ayarlar'dan tekrar 9'a
-çevrildi. Takvimde "Çarşamba" kısaltmasının "Car" gibi görünmesi
-(`table_calendar`'ın `intl` tabanlı varsayılan gün başlığı yerine artık
-`calendarBuilders.dowBuilder` ile sabit Türkçe kısaltma dizisi
-kullanılıyor — `calendar_screen.dart`) ve mobilde uygulama içi AppBar'ların
-(`role_shell_scaffold.dart`, `document_detail_screen.dart`) başlık/ikon
-rengi düzeltildi: `backgroundColor: Colors.transparent` verilince Flutter
-`Colors.transparent.computeLuminance()`'ı (alfa kanalını yok sayıp saf
-siyah kabul eder) kullanarak arka planı "koyu" sanıyor ve başlığa düşük
-kontrastlı gri bir ön plan rengi veriyordu — artık her iki AppBar'da
-`foregroundColor: Colors.white` açıkça set ediliyor.
-
-Bu ilk `foregroundColor: Colors.white` değişikliği yeni bir `design-lead`
-agent'ının (bkz. `.claude/agents/design-lead.md` — statik kod taramasının
-ötesinde uygulamayı gerçekten `flutter run -d web-server` ile başlatıp
-tarayıcıda gezinen, ekran görüntüsü alan bir tasarım lideri) canlı
-incelemesinde **gerçek bir regresyon** olarak yakalandı: `GradientScaffoldBackground`
-yalnızca `Scaffold.body`'yi sarıyordu, AppBar alanı gradient'in dışında
-kalıp temanın açık zemininde kalıyordu — beyaz başlık/ikonlar tamamen
-görünmez oluyordu (önceki gri halinden daha kötü). Düzeltme: gradient artık
-`body` yerine tüm `AdaptiveScaffold`/`Scaffold`'u (AppBar dahil) sarıyor
-(`role_shell_scaffold.dart`, `document_detail_screen.dart`). Aynı canlı
-incelemede "Çar" kısaltmasının tarayıcıda gerçekten "Car" render edildiği
-de teyit edildi (2026-07-31'deki "küçük punto'da görülmesi zor" teorisi
-yanlış çıktı) — gerçek neden `table_calendar`'ın varsayılan
-`daysOfWeekHeight` (16px) değerinin cedilla'yı alttaki takvim satırıyla
-görsel olarak çakıştırıp gizlemesiydi; `daysOfWeekHeight: 24` ile
-düzeltildi. Her iki düzeltme de gerçek Chrome'da (`flutter run -d
-web-server`, `cakalogluer@gmail.com` + `cakalogluercin86@gmail.com`
-hesaplarıyla) görsel olarak doğrulandı. Henüz gerçek cihazda ayrıca
-doğrulanmadı.
-
-`design-lead` agent'ının aynı taramada bulduğu geri kalan tasarım
-tutarlılığı notları da aynı gün (2026-08-02) düzeltildi:
-`client_contact_info_screen.dart`'taki liste öğesi `GlassCard`'dan
-`GlassSurface`'e çevrildi ve boş durumuna ikon eklendi (diğer ekranlardaki
-desenle aynı); `accountant_settings_screen.dart`'taki çıplak `TabBar`
-artık `GlassSurface` içinde hap biçimli bir indicator ile glass diline
-uyuyor; takvim marker'ına (`calendar_screen.dart`) urgency'yi sözel olarak
-anlatan bir `Semantics` etiketi eklendi (önceden yalnızca renkle
-taşınıyordu); `clients_screen.dart`'taki "Bekleyen Davetler" başlığı
-serbest `TextStyle` yerine `Theme.textTheme.titleSmall` kullanıyor. Web'de
-canlı Chrome'da (`cakalogluer@gmail.com` hesabıyla, `tahakkukfisi.com`
-üzerinde) AppBar/TabBar görsel olarak doğrulandı; kalan dördü yalnızca
-`flutter analyze` ile teyit edildi, henüz görsel doğrulama yapılmadı.
-
-2026-08-01: uygulama içinde gizlilik politikasına giden hiçbir bağlantı
-olmadığı fark edildi (`web/privacy.html` yalnızca web'de canlıydı, hiçbir
-ekran ona linklemiyordu). `AppInfoSection`'a (hem mükellef Ayarlar hem
-muhasebeci Ayarlar → Hesap sekmesinde kullanılıyor, tek kaynaktan her iki
-role de yayılıyor) `https://tahakkukfisi.com/privacy.html`'i harici
-tarayıcıda açan bir "Gizlilik Politikası" satırı eklendi — yeni
-`url_launcher` bağımlılığı gerektirdi (`AndroidManifest.xml`'deki mevcut
-`<queries>` bloğuna Android 11+ paket görünürlüğü için bir `https` VIEW
-intent'i de eklendi). Henüz gerçek cihazda doğrulanmadı.
-
-2026-08-05: Play Store yayına alma süreci fiilen başladı (bkz. gotcha'lar
-için `USE_EXACT_ALARM` ve Closed testing bulguları). Play Console'da
-"Nice Yazılım" geliştirici hesabı altında `Tahakkuk Fişi`
-(`com.tahakkukfisi.app`) uygulaması oluşturuldu; paket adı Android
-geliştirici doğrulamasında otomatik "Kayıtlı" durumda. Mağaza listesi
-eksiksiz dolduruldu (isim, kısa/uzun açıklama, ikon, feature graphic,
-telefon ekran görüntüleri + 7"/10" tablet ekran görüntüleri — tablet
-slotları için mevcut telefon görselleri PIL ile 1200×2400'e büyütülüp
-kullanıldı, orijinal 921px genişlik 10" slotunun 1080px minimum şartını
-karşılamıyordu; kategori Finans; iletişim e-posta/web sitesi). Veri
-güvenliği (Data Safety) formu 8 veri türü için toplama/paylaşım/zorunluluk
-detaylarıyla dolduruldu; IARC içerik derecelendirmesi anketi tamamlandı;
-tüm politika beyanları (Reklam, Hedef kitle 18+, Reklam Kimliği yok,
-Resmi kurum değil, Finans/Sağlık özelliği yok, Tam ekran intent — "çalar
-saat" olarak beyan edildi, kurulumda önceden izin isteniyor) dolduruldu.
-`web/privacy.html`'e somut hesap silme adımlarını anlatan yeni bir bölüm
-eklenip deploy edildi (Data Safety'nin "Hesap silme URL'si" alanı için).
-İnceleyici test hesapları (`muhasebeci.demo@example.com` +
-`mukellef.demo@example.com`, zaten birbirine bağlı muhasebeci/mükellef
-çifti) Supabase Management API üzerinden `pgcrypto` ile şifresi
-sıfırlanıp (`PlayReview2026!Fisi`) Play Console'a eklendi. AAB üç kez
-derlendi (versionCode 1→3): ilk ikisi versionCode çakışması ve
-`USE_EXACT_ALARM` düzeltmesi yüzünden; son sürüm hem Internal testing hem
-yeni oluşturulan Closed testing kanalına ("Kapalı test - alfa", Türkiye
-hedefli) yüklendi. Tüm 14 değişiklik Google'ın incelemesine gönderildi
-(genelde 7 gün içinde tamamlanıyor). Production'a geçiş için Closed
-testing kanalına en az 12 gerçek test kullanıcısı eklenip 14 gün
-kesintisiz kayıtlı tutulması gerekiyor — henüz yapılmadı (bkz. Backlog).
-
-2026-09-12: Belge yüklendiğinde mükellefe otomatik WhatsApp bildirimi
-gönderen ikinci, tamamen bağımsız bir kanal eklendi (mevcut FCM push
-akışı hiç değişmedi). Karar: hiçbir BSP (360dialog/Twilio/Gupshup —
-aylık €49-249 sabit ücret) kullanılmadı, doğrudan Meta WhatsApp Cloud
-API'sine (`graph.facebook.com`) gidiliyor — kendi tek WhatsApp hesabı
-için Meta hiçbir aylık/platform ücreti almıyor, yalnızca kategori bazlı
-mesaj başına ücretlendiriyor (Utility/TR ~$0,0014/mesaj → ayda 100-500
-mesaj için toplam $0,14-$0,70). Mimari: `notify_document_insert()`
-trigger fonksiyonu (`20260912000000_documents_whatsapp_webhook.sql`)
-mevcut FCM `net.http_post`'una dokunmadan ikinci, bağımsız bir
-`net.http_post`'la yeni `send-whatsapp-document` Edge Function'ını
-tetikliyor (ayrı Vault secret'ları: `whatsapp_edge_function_url`,
-`whatsapp_webhook_secret` — biri patlarsa/yanlış yapılandırılırsa diğerini
-etkilemiyor). Fonksiyon `client_contact_info.whatsapp_enabled` (yeni
-kolon, varsayılan `false` — İYS hukuki belirsizliği netleşene kadar kill
-switch) + `phone` kontrolü yapıyor, TR telefonunu normalize ediyor, PDF
-için 3 günlük signed URL üretiyor, kategoriye göre (`payment`/`info`)
-önceden onaylı bir Meta template'i doldurup System User'ın kalıcı access
-token'ıyla gönderiyor; her koşulda (hata dahil) 200 dönüyor ki pg_net
-retry yapmasın.
-
-Meta tarafında tek seferlik kurulum tamamlandı: Business tipi Meta App +
-WhatsApp ürünü eklendi, Business Manager bilgileri girildi, System User
-(`WhatsappEntegrasyonu`) oluşturulup kalıcı (`whatsapp_business_messaging`
-izniyle) access token üretildi, ücretsiz Meta test numarası + kullanıcının
-kendi numarası doğrulanmış test alıcısı olarak eklendi. İki template
-Türkçe (`tr`) olarak oluşturulup Meta'nın onayına gönderildi:
-`belge_bildirimi_odeme` (ödeme belgeleri, 6 body parametresi: mükellef
-adı, muhasebeci/ofis adı, belge türü, dönem, tutar, son ödeme tarihi) ve
-`belge_bildirimi_bilgi` (bilgi belgeleri, 4 parametre — tutar/vade yok).
-İkisi de `{{2}}` olarak muhasebeci/ofis adını taşıyor — paylaşımlı tek
-WhatsApp numarasından birden fazla muhasebeci mesaj gönderebildiği için
-mesajın kimden geldiği netleşsin diye. Her iki template de bu tarih
-itibarıyla hâlâ "Değerlendiriliyor" durumunda (Meta incelemesi genelde
-birkaç saat-birkaç gün sürüyor); onaylanınca `WHATSAPP_TEMPLATE_PAYMENT_NAME`/
-`WHATSAPP_TEMPLATE_INFO_NAME` Supabase secret'ları set edilip uçtan uca
-test yapılacak (bkz. Backlog).
-
-Test mükellefi tespiti sırasında bir belge tutarsızlığı bulundu: önceden
-gerçek cihaz testi hesabı olarak dokümante edilen `cakalogluercin86@gmail.com`
-bu Supabase projesinin `auth.users` tablosunda artık mevcut değil (sorgu 0
-satır döndü). Bunun yerine muhasebeci hesabıyla aynı e-postayı paylaşan
-`cakalogluer@gmail.com`'un `profiles` tablosunda `role = 'client'`
-(`full_name = 'Erçin Çakaloğlu'`) olarak kayıtlı olduğu doğrulandı — yani
-gerçek cihaz/mükellef testleri için kullanılan hesap muhtemelen hep buydu,
-`cakalogluercin86@gmail.com` referansı eski/yanlış bir kayıt ya da silinmiş
-bir hesaba ait. Bu hesap için `client_contact_info` satırı ilk kez
-oluşturuldu (`phone = '0542 308 63 57'`, `whatsapp_enabled = true`) —
-template'ler onaylanır onaylanmaz uçtan uca test bu hesapla yapılabilir.
-
-2026-09-13: WhatsApp bildirimi uçtan uca doğrulandı ve production'a alındı.
-Her iki template (`belge_bildirimi_odeme`, `belge_bildirimi_bilgi`) Meta
-tarafından onaylandı; `WHATSAPP_TEMPLATE_PAYMENT_NAME`/
-`WHATSAPP_TEMPLATE_INFO_NAME` secret'ları set edildi. İlk uçtan uca
-denemede `belge_bildirimi_odeme` göndermeye çalışan her istek
-`(#132001) Template name does not exist in the translation` hatasıyla
-başarısız oldu — üç ayrı kök neden art arda bulunup düzeltildi:
-1. `send-whatsapp-document/index.ts`'teki sabit `WHATSAPP_GRAPH_API_VERSION`
-   hâlâ `v21.0`'dı (fonksiyon ilk yazıldığındaki güncel sürüm); bu sürüm
-   artık yeni onaylanan template'leri çözemiyordu. `v26.0`'a
-   güncellenip deploy edildi.
-2. `WHATSAPP_ACCESS_TOKEN` secret'ı bir Supabase log satırının "Kopyala"
-   butonuna güvenilip panodan okunurken aslında kopyalama başarısız olmuş
-   ve panoda duran ESKİ token bu oturumun çıktısına yanlışlıkla
-   yazdırılmıştı — güvenlik önlemi olarak Meta'da tüm System User
-   token'ları hemen iptal edilip (`Jetonları geri çek`) yenisi üretildi.
-3. Asıl kök neden bu değildi: System User'ın (`WhatsappEntegrasyonu`) bu
-   WhatsApp hesabı için **yalnızca "Mesajlar" (mesaj gönderme/yanıtlama)**
-   izni vardı, "Mesaj şablonları" izinlerinin hiçbiri açık değildi (bkz.
-   gotcha'lar) — Meta bunu template gerçekten yokmuş gibi raporluyordu.
-   Business Settings → Sistem kullanıcıları → WhatsApp hesabı → Yönet'ten
-   "Mesaj şablonları (sadece görüntüleme)" izni açılınca (token yeniden
-   üretmeye gerek kalmadan, Meta izinleri her istekte canlı kontrol
-   ediyor) gerçek `documents` insert trigger'ı ile hem WhatsApp
-   (`{"sent":true}`) hem FCM push (`{"sent":1}`) başarıyla tetiklendi ve
-   test mükellefinin telefonuna gerçek mesaj gitti. Test için `cakalogluer@
-   gmail.com` geçici olarak demo muhasebeciye (`muhasebeci.demo@example.com`)
-   bağlanıp test sonrası gerçek muhasebecisine (`uuysall@gmail.com`) geri
-   bağlandı; tüm test `documents` satırları ve test PDF'i temizlendi.
-
-2026-09-14: `client_contact_info_screen.dart`'a "WhatsApp bildirimi gönder"
-switch'i eklendi — `whatsapp_enabled` artık muhasebeci tarafından
-uygulama içinden (Ayarlar → Mükellef Bilgileri) açılıp kapatılabiliyor,
-önceden yalnızca SQL ile mümkündü. `ClientContactInfo` domain modeline
-(`@Default(false) bool whatsappEnabled`, `whatsapp_enabled` sütununa map
-ediliyor) yeni alan eklenip `build_runner` ile freezed dosyası yeniden
-üretildi; `ClientsRepository.saveContactInfo` upsert payload'ına
-`whatsapp_enabled` eklendi. Yerel bir `flutter build web` +
-`python -m http.server` ile (`flutter run -d web-server`'ın DWDS/debug
-uzantısı sorunu yüzünden, bkz. gotcha'lar) gerçek Chrome'da
-`muhasebeci.demo@example.com` hesabıyla uçtan uca doğrulandı: telefon
-girilip switch açılınca `whatsapp_enabled=true` kalıcı oluyor, sayfa
-yenilenince (F5) doğru yükleniyor, switch kapatılıp telefon silinince
-`whatsapp_enabled=false`/`phone=null` oluyor — demo hesap test sonrası bu
-temiz haline döndürüldü. `flutter analyze` temiz. Henüz gerçek cihazda
-ayrıca doğrulanmadı, `tahakkukfisi.com`'a deploy edilmedi.
-
-## Backlog (2026-08-05 itibarıyla henüz yapılmadı)
-
-Play Store yayına alma — Play Console tarafındaki asıl kurulum bitti
-(bkz. yukarıdaki "Durum"), kalanlar zaman gerektiren/manuel adımlar:
+Play Store production'a geçiş:
 - **Closed testing**: "Kapalı test - alfa" kanalına en az 12 gerçek test
   kullanıcısı davet edilip (katılım linki:
   `https://play.google.com/apps/testing/com.tahakkukfisi.app`) en az 14
-  gün kesintisiz kayıtlı tutulmalı — bu tamamlanmadan Production'a
-  başvuru açılmıyor (yeni kişisel geliştirici hesabı şartı, bkz.
-  gotcha'lar).
+  gün kesintisiz kayıtlı tutulmalı — tamamlanmadan Production'a başvuru
+  açılmıyor.
 - Google'ın 14 değişiklik incelemesi sonucu beklenmeli (genelde 7 gün).
-- İnceleme + 14 günlük Closed testing tamamlanınca: Kontrol panelindeki
-  "Üretime erişim için başvuruda bulunma" formu (3 bölüm: test
-  kullanıcı bulma zorluğu, katılım/geri bildirim özeti, üretime hazır
-  olma kanıtı) doldurulup Production'a terfi başvurusu yapılmalı.
-- Google OAuth consent screen'i Testing'den çıkarıp Publish App yapma
-  (Android'de Google girişi 2026-08-01'de gerçek cihazda test edildi ve
-  çalıştığı doğrulandı).
+- İkisi tamamlanınca Kontrol panelindeki "Üretime erişim için başvuruda
+  bulunma" formu doldurulup Production'a terfi başvurusu yapılmalı.
+- Google OAuth consent screen'i Testing'den çıkarıp Publish App yapma.
 
-WhatsApp belge bildirimi (bkz. Durum, 2026-09-12/13):
-- ~~Meta template onayı ve uçtan uca doğrulama~~ — 2026-09-13'te tamamlandı,
-  bkz. Durum.
-- **Gerçek işletme numarasına geçiş**: Test doğrulandıktan sonra WABA'ya
-  gerçek bir telefon numarası eklenip Business Verification tamamlanmalı,
+WhatsApp gerçek numaraya geçiş:
+- Business Verification sonucu bekleniyor (~2 iş günü, 2026-09-14'te
+  başladı) — sonuç numaradan bağımsız, geçerli kalır.
+- **Kullanıcı ayrı/dedike bir telefon numarası temin etmeli** — mevcut iş
+  telefonu kişisel kullanımda olduğu için kullanılamıyor. Numara hazır
+  olunca: WABA'ya eklenip SMS/arama koduyla doğrulanmalı, ardından
   `WHATSAPP_PHONE_NUMBER_ID`/`WHATSAPP_ACCESS_TOKEN` gerçek değerlerle
   güncellenmeli.
 - **İYS (ticari elektronik ileti onay sistemi) uygulanabilirliği hâlâ
   netleşmedi** — `whatsapp_enabled` varsayılan `false` kill switch bu
   yüzden var; genel açılışa (herkese `true`) geçmeden önce hukuki netlik
   gerekiyor.
-- ~~client_contact_info_screen.dart'a UI eklenmedi~~ — 2026-09-14'te eklendi,
-  bkz. Durum.
 
 Diğer:
-- **Deleted account session gap** (bkz. gotcha'lar,
-  `delete_own_account`): bilerek kabul edilmiş bir artık risk, ana
-  RPC'lere `deleted_at is null` kontrolü eklemek gelecekte bir seçenek.
+- **Deleted account session gap** (bkz. gotcha'lar): bilerek kabul
+  edilmiş bir artık risk, ana RPC'lere `deleted_at is null` kontrolü
+  eklemek gelecekte bir seçenek.
 - **CAPTCHA/rate limiting** (login/signup): Supabase Auth zaten IP bazlı
-  temel rate limiting uyguluyor; hCaptcha/Turnstile entegrasyonu ayrı bir
-  üçüncü taraf hesabı + site key gerektirdiğinden ayrı bir karar olarak
-  bekletiliyor.
+  temel rate limiting uyguluyor; hCaptcha/Turnstile ayrı bir üçüncü taraf
+  hesabı gerektirdiğinden bekletiliyor.
