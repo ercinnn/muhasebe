@@ -31,7 +31,8 @@ lib/
     settings/       yalnız mobilde anlamlı
 supabase/
   migrations/       şema, RLS, storage policy, pg_net webhook trigger
-  functions/on-document-insert/  FCM v1 push gönderen Edge Function (Deno)
+  functions/on-document-insert/     FCM v1 push gönderen Edge Function (Deno)
+  functions/send-whatsapp-document/ WhatsApp Cloud API bildirim Edge Function (Deno, bkz. Durum)
 test/classification/  sınıflandırma motoru unit testleri (34 test, saf dart)
 ```
 
@@ -183,7 +184,69 @@ release build'i reddeder.
   linked projeye Management API üzerinden SQL çalıştırılabilir (DB şifresi
   gerekmez, eski CLI'da yerleşik `db query` yok). Webhook debug için en
   değerli tablolar: `net._http_response` (her pg_net isteğinin gerçek
-  status/body'si) ve `vault.decrypted_secrets`.
+  status/body'si) ve `vault.decrypted_secrets`. 2026-09-12'de bu CLI komutu
+  kullanıcının makinesinde sürekli çıktısız kaldı (yalnızca "Initialising
+  login role..." yazıp prompt'a dönüyordu, basit `select count(*)` için
+  bile) — sebebi netleşmedi, muhtemelen yerel bir terminal/CLI sorunu;
+  Supabase Dashboard'un SQL Editor'ü üzerinden çalıştırmak güvenilir
+  alternatif oldu.
+- **Supabase Dashboard SQL Editor'de Monaco editörüne native tıklama/yazma
+  bazen hiç focus almıyor** (`ctrl+a` tüm sayfayı seçiyor, yazılan hiçbir
+  karakter editöre gitmiyor, sekmedeki placeholder metni değişmeden
+  kalıyor) — özellikle Disk IO Budget throttling'i altındaki bu projede
+  editör yükleme sonrası bir süre tepkisiz kalabiliyor. Kesin çözüm:
+  `window.monaco.editor.getModels()[0].setValue("...")` ile sorguyu
+  doğrudan Monaco'nun model API'siyle set etmek (React state'i
+  `onDidChangeModelContent` ile senkronize oluyor), ardından Run butonuna
+  `ref` tabanlı tıklamak — koordinat tabanlı tıklama viewport/screenshot
+  boyut uyuşmazlığı yüzünden (bu oturumda 1568×652 screenshot'a karşılık
+  2304×958 gerçek viewport) yanlış yere gidebiliyor. `setValue()`'dan hemen
+  sonra Run'a tıklamak bazen state güncellenmeden çalışıyor (eski sorgu
+  çalışıyor) — aradan bir-iki tool-call/tur geçmesini beklemek yeterli
+  oluyor.
+- **Meta Business Manager'da template/mesaj editörü iki ayrı yazı
+  tuzağı içeriyor** (2026-09'da `belge_bildirimi_odeme`/`belge_bildirimi_bilgi`
+  template'leri oluşturulurken bulundu): (1) `{{` yazınca editör otomatik
+  eşleşen `}}` ekliyor — `{{1}}` gibi bir değişkeni tek seferde yazmaya
+  çalışmak `{{1}}1}}` gibi çift kapanışa yol açıyor; doğru yöntem `{{`'ye
+  kadar yazıp otomatik eklenen `}}`'nin ötesine `End` ile atlamak, sonra
+  bir sonraki metin parçasına geçmek. (2) Her ayrı `type()` çağrısının
+  sonunda bırakılan boşluk, bir sonraki ekleme/buton tıklamasından hemen
+  önce editör tarafından kırpılıyor (`"Sayın {{1}}"` yerine `"Sayın{{1}}"`
+  gibi kelimeler bitişik çıkıyor) — çözüm: boşluğu önceki parçanın sonuna
+  değil, bir sonraki parçanın **başına** koymak (baştaki boşluk korunuyor).
+- **Meta App Dashboard'daki WhatsApp kurulum sihirbazının "Generate
+  token" butonu arayüzde bozuk görünüyor** ("Not generated yet" yazısı
+  tekrar tıklansa da, sayfa yenilense de değişmiyor) — Graph API Explorer
+  (developers.facebook.com/tools/explorer) ile doğrulandı: token aslında
+  her denemede gerçekten üretiliyor, sadece bu widget'ın kendi durum
+  göstergesi güncellenmiyor. Bunun yan etkisi: her başarısız görünen
+  deneme aslında yeni bir test WABA'sı ("Test WhatsApp Business Account")
+  yaratıyor — OAuth onay ekranında 3 tane duplicate test WABA görünmesinin
+  sebebi buydu.
+- **Meta System User adı sıkı bir format bekliyor** — tire içeren
+  (`muhasebe-takip-whatsapp`) ve boşluklu (`muhasebe takip whatsapp`)
+  adlar "Profil adları çok fazla tire içeremez" / "Geçersiz bir Sistem
+  Kullanıcısı adı seçtiniz" hatasıyla reddedildi; tek kelimelik CamelCase
+  (`WhatsappEntegrasyonu`) kabul edildi.
+- **Meta'nın "(#132001) Template name does not exist in the translation"
+  hatası template'in var olmamasından değil, gönderen kimliğin template'i
+  GÖREMEMESİNDEN de kaynaklanabilir** — 2026-09-13'te `belge_bildirimi_odeme`
+  hem şablon listesinde APPROVED/`tr` görünüyor hem doğru WABA/telefon
+  numarasıyla eşleşiyorken System User (`WhatsappEntegrasyonu`) token'ıyla
+  gönderim ısrarla bu hatayla başarısız oluyordu; kişisel kullanıcı
+  token'ıyla (Graph API Explorer) aynı istek anında başarılı oldu. Kök
+  neden: Business Settings → Sistem kullanıcıları → ilgili WhatsApp hesabı
+  → **Yönet**'teki "Atamaları yönet" panelinde System User'a yalnızca
+  "Mesajlar" (gönder/yanıtla) izni verilmişti, "Mesaj şablonları (sadece
+  görüntüleme)" hiç açık değildi — WhatsApp Hesapları listesindeki özet
+  etiket ("Kısmi erişim (... and Mesajlar)") bu eksikliği göstermiyor,
+  yalnızca bu panel gösteriyor. İzni açmak yetti, token'ı yeniden üretmeye
+  gerek kalmadı (Meta izinleri her istekte canlı kontrol ediyor). Ayrıca
+  bu debug sürecinde ayrı bir sorun daha bulundu: Edge Function'daki sabit
+  `WHATSAPP_GRAPH_API_VERSION` hâlâ `v21.0`'dı (muhtemelen sunset/eski),
+  `v26.0`'a güncellendi — iki sorun da birlikte giderilmeden gönderim
+  çalışmadı.
 - **Push data-only, arka plan isolate'i kendi başına eksik** — FCM mesajı
   sessiz bir data payload'ı, uygulama kendi bildirimini kendi gösteriyor
   (`fcm_service.dart` foreground / `fcm_background_handler.dart` arka
@@ -310,6 +373,45 @@ release build'i reddeder.
   documents/storage'ı kullanmaya devam edebilir — 2026-07-31'de
   `/security-review` ile bulundu, bilerek (henüz) düzeltilmedi; ileride
   ana RPC'lere `deleted_at is null` kontrolü eklemek bir seçenek.
+- **`USE_EXACT_ALARM` Play politikasında "çalar saat/takvim" olmayan
+  uygulamalar için uygun değil** — `flutter_local_notifications`'ın vade
+  hatırlatmaları için eklediği `AndroidManifest.xml` izni
+  (`SCHEDULE_EXACT_ALARM`'ın yanına) Play Console'da "Tam alarmlar"
+  beyanında uygulamanın temel işlevinin çalar saat/takvim olduğunu
+  beyan etmeyi gerektiriyordu — bizimki belge takip uygulaması, bu
+  gerçeği yansıtmayan bir beyan reddedilme/kaldırılma riski taşırdı.
+  2026-08-05'te kaldırıldı, yalnızca `SCHEDULE_EXACT_ALARM` kaldı (daha
+  az kısıtlayıcı, Android 12+'ta kullanıcı onayı gerektirir ama
+  uygulama zaten bunu native olarak yönetiyor) — bu beyanı Play
+  Console'dan tamamen düşürdü, versionCode 3'e yeniden derlenip
+  Internal + Closed testing'e yeniden yüklendi.
+- **Play Console'da bir per-item dialog'un kendi "Kaydet"i yalnızca
+  session state'e yazıyor, sunucuya değil** — Veri güvenliği/Uygulama
+  içeriği gibi çok adımlı formlarda her veri türü/soru için açılan
+  modal'ı "Kaydet" ile kapatmak yeterli değil; sayfa yenilenmeden ya da
+  başka bir sekmeye geçmeden önce üstteki `⋮` (Diğer seçenekler) menüsünden
+  ayrıca "Taslağı kaydet" yapılmazsa ilerleme sessizce kaybolur (reload
+  sonrası "Başlamadı"ya döner). Aynı sebeple bazı grid hücrelerindeki
+  "X sorularını aç" butonları `read_page`/`find` ile alınan taze bir
+  `ref` gerektiriyor — koordinat tıklaması veya bayat `ref` çoğu zaman
+  hiçbir şey açmıyor (sessizce no-op).
+- **Yeni (13 Kasım 2023 sonrası oluşturulan) kişisel geliştirici
+  hesapları için "Uygulamayı incelemeye gönder" kilidi, Internal
+  testing'in kendisiyle değil Closed testing zorunluluğuyla ilgili** —
+  Yayın özeti sayfasındaki gönder butonu "kontrol panelindeki gerekli
+  adımları tamamlayın" gibi belirsiz bir mesajla kilitli kalıyor;
+  Kontrol paneli/Mağaza ayarları/Uygulama içeriği/Android geliştirici
+  doğrulaması/Politika durumu sayfalarının hepsi tamamlanmış görünse
+  bile buton açılmıyor. Gerçek sebep:
+  support.google.com/googleplay/android-developer/answer/14151465 —
+  bu hesap sınıfı Production'a geçmeden önce en az **12 test
+  kullanıcısıyla en az 14 gün kesintisiz** Closed testing yapılmasını
+  şart koşuyor; bu şart karşılanana kadar (Internal testing tek başına
+  yeterli değil) genel "incelemeye gönder" akışı da kilitli kalıyor. Bir
+  Closed testing kanalı oluşturup (Test edin ve yayınlayın → Kapalı
+  test → Kanal oluştur), aynı AAB'yi ekleyip (Kitaplıktan ekle — tekrar
+  yüklemeye gerek yok), en az bir ülke/bölge ve en az bir test kullanıcı
+  listesi atayınca kilit anında açıldı.
 
 ## Durum
 
@@ -558,18 +660,148 @@ tarayıcıda açan bir "Gizlilik Politikası" satırı eklendi — yeni
 `<queries>` bloğuna Android 11+ paket görünürlüğü için bir `https` VIEW
 intent'i de eklendi). Henüz gerçek cihazda doğrulanmadı.
 
-## Backlog (2026-08-01 itibarıyla henüz yapılmadı)
+2026-08-05: Play Store yayına alma süreci fiilen başladı (bkz. gotcha'lar
+için `USE_EXACT_ALARM` ve Closed testing bulguları). Play Console'da
+"Nice Yazılım" geliştirici hesabı altında `Tahakkuk Fişi`
+(`com.tahakkukfisi.app`) uygulaması oluşturuldu; paket adı Android
+geliştirici doğrulamasında otomatik "Kayıtlı" durumda. Mağaza listesi
+eksiksiz dolduruldu (isim, kısa/uzun açıklama, ikon, feature graphic,
+telefon ekran görüntüleri + 7"/10" tablet ekran görüntüleri — tablet
+slotları için mevcut telefon görselleri PIL ile 1200×2400'e büyütülüp
+kullanıldı, orijinal 921px genişlik 10" slotunun 1080px minimum şartını
+karşılamıyordu; kategori Finans; iletişim e-posta/web sitesi). Veri
+güvenliği (Data Safety) formu 8 veri türü için toplama/paylaşım/zorunluluk
+detaylarıyla dolduruldu; IARC içerik derecelendirmesi anketi tamamlandı;
+tüm politika beyanları (Reklam, Hedef kitle 18+, Reklam Kimliği yok,
+Resmi kurum değil, Finans/Sağlık özelliği yok, Tam ekran intent — "çalar
+saat" olarak beyan edildi, kurulumda önceden izin isteniyor) dolduruldu.
+`web/privacy.html`'e somut hesap silme adımlarını anlatan yeni bir bölüm
+eklenip deploy edildi (Data Safety'nin "Hesap silme URL'si" alanı için).
+İnceleyici test hesapları (`muhasebeci.demo@example.com` +
+`mukellef.demo@example.com`, zaten birbirine bağlı muhasebeci/mükellef
+çifti) Supabase Management API üzerinden `pgcrypto` ile şifresi
+sıfırlanıp (`PlayReview2026!Fisi`) Play Console'a eklendi. AAB üç kez
+derlendi (versionCode 1→3): ilk ikisi versionCode çakışması ve
+`USE_EXACT_ALARM` düzeltmesi yüzünden; son sürüm hem Internal testing hem
+yeni oluşturulan Closed testing kanalına ("Kapalı test - alfa", Türkiye
+hedefli) yüklendi. Tüm 14 değişiklik Google'ın incelemesine gönderildi
+(genelde 7 gün içinde tamamlanıyor). Production'a geçiş için Closed
+testing kanalına en az 12 gerçek test kullanıcısı eklenip 14 gün
+kesintisiz kayıtlı tutulması gerekiyor — henüz yapılmadı (bkz. Backlog).
 
-Play Store yayına alma (bkz. yukarıdaki "Durum", teknik hazırlık bitti,
-kalanlar Play Console'da manuel). Android'de Google girişi 2026-08-01'de
-gerçek cihazda test edildi ve çalıştığı doğrulandı (önceden yalnızca
-web'de doğrulanmıştı):
-- Play Console geliştirici hesabı, mağaza listesi (açıklamalar, ekran
-  görüntüleri, feature graphic 1024×500 — henüz yok)
-- Data safety formu, içerik derecelendirmesi (IARC), izin bildirimi
-  (Alarms & reminders → `SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM` gerekçesi)
-- `app-release.aab`'yi Internal testing'e yükleme → Production'a terfi
+2026-09-12: Belge yüklendiğinde mükellefe otomatik WhatsApp bildirimi
+gönderen ikinci, tamamen bağımsız bir kanal eklendi (mevcut FCM push
+akışı hiç değişmedi). Karar: hiçbir BSP (360dialog/Twilio/Gupshup —
+aylık €49-249 sabit ücret) kullanılmadı, doğrudan Meta WhatsApp Cloud
+API'sine (`graph.facebook.com`) gidiliyor — kendi tek WhatsApp hesabı
+için Meta hiçbir aylık/platform ücreti almıyor, yalnızca kategori bazlı
+mesaj başına ücretlendiriyor (Utility/TR ~$0,0014/mesaj → ayda 100-500
+mesaj için toplam $0,14-$0,70). Mimari: `notify_document_insert()`
+trigger fonksiyonu (`20260912000000_documents_whatsapp_webhook.sql`)
+mevcut FCM `net.http_post`'una dokunmadan ikinci, bağımsız bir
+`net.http_post`'la yeni `send-whatsapp-document` Edge Function'ını
+tetikliyor (ayrı Vault secret'ları: `whatsapp_edge_function_url`,
+`whatsapp_webhook_secret` — biri patlarsa/yanlış yapılandırılırsa diğerini
+etkilemiyor). Fonksiyon `client_contact_info.whatsapp_enabled` (yeni
+kolon, varsayılan `false` — İYS hukuki belirsizliği netleşene kadar kill
+switch) + `phone` kontrolü yapıyor, TR telefonunu normalize ediyor, PDF
+için 3 günlük signed URL üretiyor, kategoriye göre (`payment`/`info`)
+önceden onaylı bir Meta template'i doldurup System User'ın kalıcı access
+token'ıyla gönderiyor; her koşulda (hata dahil) 200 dönüyor ki pg_net
+retry yapmasın.
+
+Meta tarafında tek seferlik kurulum tamamlandı: Business tipi Meta App +
+WhatsApp ürünü eklendi, Business Manager bilgileri girildi, System User
+(`WhatsappEntegrasyonu`) oluşturulup kalıcı (`whatsapp_business_messaging`
+izniyle) access token üretildi, ücretsiz Meta test numarası + kullanıcının
+kendi numarası doğrulanmış test alıcısı olarak eklendi. İki template
+Türkçe (`tr`) olarak oluşturulup Meta'nın onayına gönderildi:
+`belge_bildirimi_odeme` (ödeme belgeleri, 6 body parametresi: mükellef
+adı, muhasebeci/ofis adı, belge türü, dönem, tutar, son ödeme tarihi) ve
+`belge_bildirimi_bilgi` (bilgi belgeleri, 4 parametre — tutar/vade yok).
+İkisi de `{{2}}` olarak muhasebeci/ofis adını taşıyor — paylaşımlı tek
+WhatsApp numarasından birden fazla muhasebeci mesaj gönderebildiği için
+mesajın kimden geldiği netleşsin diye. Her iki template de bu tarih
+itibarıyla hâlâ "Değerlendiriliyor" durumunda (Meta incelemesi genelde
+birkaç saat-birkaç gün sürüyor); onaylanınca `WHATSAPP_TEMPLATE_PAYMENT_NAME`/
+`WHATSAPP_TEMPLATE_INFO_NAME` Supabase secret'ları set edilip uçtan uca
+test yapılacak (bkz. Backlog).
+
+Test mükellefi tespiti sırasında bir belge tutarsızlığı bulundu: önceden
+gerçek cihaz testi hesabı olarak dokümante edilen `cakalogluercin86@gmail.com`
+bu Supabase projesinin `auth.users` tablosunda artık mevcut değil (sorgu 0
+satır döndü). Bunun yerine muhasebeci hesabıyla aynı e-postayı paylaşan
+`cakalogluer@gmail.com`'un `profiles` tablosunda `role = 'client'`
+(`full_name = 'Erçin Çakaloğlu'`) olarak kayıtlı olduğu doğrulandı — yani
+gerçek cihaz/mükellef testleri için kullanılan hesap muhtemelen hep buydu,
+`cakalogluercin86@gmail.com` referansı eski/yanlış bir kayıt ya da silinmiş
+bir hesaba ait. Bu hesap için `client_contact_info` satırı ilk kez
+oluşturuldu (`phone = '0542 308 63 57'`, `whatsapp_enabled = true`) —
+template'ler onaylanır onaylanmaz uçtan uca test bu hesapla yapılabilir.
+
+2026-09-13: WhatsApp bildirimi uçtan uca doğrulandı ve production'a alındı.
+Her iki template (`belge_bildirimi_odeme`, `belge_bildirimi_bilgi`) Meta
+tarafından onaylandı; `WHATSAPP_TEMPLATE_PAYMENT_NAME`/
+`WHATSAPP_TEMPLATE_INFO_NAME` secret'ları set edildi. İlk uçtan uca
+denemede `belge_bildirimi_odeme` göndermeye çalışan her istek
+`(#132001) Template name does not exist in the translation` hatasıyla
+başarısız oldu — üç ayrı kök neden art arda bulunup düzeltildi:
+1. `send-whatsapp-document/index.ts`'teki sabit `WHATSAPP_GRAPH_API_VERSION`
+   hâlâ `v21.0`'dı (fonksiyon ilk yazıldığındaki güncel sürüm); bu sürüm
+   art tık yeni onaylanan template'leri çözemiyordu. `v26.0`'a
+   güncellenip deploy edildi.
+2. `WHATSAPP_ACCESS_TOKEN` secret'ı bir Supabase log satırının "Kopyala"
+   butonuna güvenilip panodan okunurken aslında kopyalama başarısız olmuş
+   ve panoda duran ESKİ token bu oturumun çıktısına yanlışlıkla
+   yazdırılmıştı — güvenlik önlemi olarak Meta'da tüm System User
+   token'ları hemen iptal edilip (`Jetonları geri çek`) yenisi üretildi.
+3. Asıl kök neden bu değildi: System User'ın (`WhatsappEntegrasyonu`) bu
+   WhatsApp hesabı için **yalnızca "Mesajlar" (mesaj gönderme/yanıtlama)**
+   izni vardı, "Mesaj şablonları" izinlerinin hiçbiri açık değildi (bkz.
+   gotcha'lar) — Meta bunu template gerçekten yokmuş gibi raporluyordu.
+   Business Settings → Sistem kullanıcıları → WhatsApp hesabı → Yönet'ten
+   "Mesaj şablonları (sadece görüntüleme)" izni açılınca (token yeniden
+   üretmeye gerek kalmadan, Meta izinleri her istekte canlı kontrol
+   ediyor) gerçek `documents` insert trigger'ı ile hem WhatsApp
+   (`{"sent":true}`) hem FCM push (`{"sent":1}`) başarıyla tetiklendi ve
+   test mükellefinin telefonuna gerçek mesaj gitti. Test için `cakalogluer@
+   gmail.com` geçici olarak demo muhasebeciye (`muhasebeci.demo@example.com`)
+   bağlanıp test sonrası gerçek muhasebecisine (`uuysall@gmail.com`) geri
+   bağlandı; tüm test `documents` satırları ve test PDF'i temizlendi.
+
+## Backlog (2026-08-05 itibarıyla henüz yapılmadı)
+
+Play Store yayına alma — Play Console tarafındaki asıl kurulum bitti
+(bkz. yukarıdaki "Durum"), kalanlar zaman gerektiren/manuel adımlar:
+- **Closed testing**: "Kapalı test - alfa" kanalına en az 12 gerçek test
+  kullanıcısı davet edilip (katılım linki:
+  `https://play.google.com/apps/testing/com.tahakkukfisi.app`) en az 14
+  gün kesintisiz kayıtlı tutulmalı — bu tamamlanmadan Production'a
+  başvuru açılmıyor (yeni kişisel geliştirici hesabı şartı, bkz.
+  gotcha'lar).
+- Google'ın 14 değişiklik incelemesi sonucu beklenmeli (genelde 7 gün).
+- İnceleme + 14 günlük Closed testing tamamlanınca: Kontrol panelindeki
+  "Üretime erişim için başvuruda bulunma" formu (3 bölüm: test
+  kullanıcı bulma zorluğu, katılım/geri bildirim özeti, üretime hazır
+  olma kanıtı) doldurulup Production'a terfi başvurusu yapılmalı.
 - Google OAuth consent screen'i Testing'den çıkarıp Publish App yapma
+  (Android'de Google girişi 2026-08-01'de gerçek cihazda test edildi ve
+  çalıştığı doğrulandı).
+
+WhatsApp belge bildirimi (bkz. Durum, 2026-09-12/13):
+- ~~Meta template onayı ve uçtan uca doğrulama~~ — 2026-09-13'te tamamlandı,
+  bkz. Durum.
+- **Gerçek işletme numarasına geçiş**: Test doğrulandıktan sonra WABA'ya
+  gerçek bir telefon numarası eklenip Business Verification tamamlanmalı,
+  `WHATSAPP_PHONE_NUMBER_ID`/`WHATSAPP_ACCESS_TOKEN` gerçek değerlerle
+  güncellenmeli.
+- **İYS (ticari elektronik ileti onay sistemi) uygulanabilirliği hâlâ
+  netleşmedi** — `whatsapp_enabled` varsayılan `false` kill switch bu
+  yüzden var; genel açılışa (herkese `true`) geçmeden önce hukuki netlik
+  gerekiyor.
+- **client_contact_info_screen.dart'a UI eklenmedi** — flag şu an yalnızca
+  SQL ile açılıyor; ileride muhasebecinin kendi ekranından telefon +
+  "WhatsApp bildirimi gönder" switch'i açması istenirse ayrı bir iterasyon.
 
 Diğer:
 - **Deleted account session gap** (bkz. gotcha'lar,
