@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gizlilik Politikası — Tahakkuk Fişi</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+    line-height: 1.6;
+    color: #1a1a2e;
+    background: #fdfdff;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { color: #e8e8f0; background: #14121f; }
+    a { color: #9db4ff; }
+  }
+  h1 { font-size: 1.6rem; margin-bottom: 4px; }
+  h2 { font-size: 1.15rem; margin-top: 2.2em; }
+  .updated { color: #6b6b80; font-size: 0.9rem; margin-bottom: 2em; }
+  ul { padding-left: 1.3em; }
+  li { margin-bottom: 0.4em; }
+  a { color: #4f46e5; }
+</style>
+</head>
+<body>
+  <h1>Gizlilik Politikası</h1>
+  <p class="updated">Tahakkuk Fişi — Son güncelleme: 4 Ağustos 2026</p>
+
+  <p>
+    Tahakkuk Fişi ("uygulama"), muhasebeciler ile mükellefleri arasında resmi
+    vergi/SGK belgelerinin paylaşılmasını ve takibini sağlayan bir belge takip
+    uygulamasıdır. Bu sayfa, uygulamayı kullanırken hangi verilerin
+    toplandığını, nasıl kullanıldığını ve haklarınızı açıklar.
+  </p>
+
+  <h2>1. Toplanan Veriler</h2>
+  <ul>
+    <li><strong>Hesap bilgileri:</strong> ad soyad, e-posta adresi, rol (muhasebeci/mükellef).</li>
+    <li><strong>Belge verileri:</strong> muhasebeciniz tarafından yüklenen resmi vergi/SGK belgeleri ve bu belgelerden otomatik çıkarılan bilgiler (belge türü, tutar, vade tarihi, fiş no, ödeme durumu).</li>
+    <li><strong>Bildirim verileri:</strong> mobil push bildirimi göndermek için cihazınıza ait bir FCM (Firebase Cloud Messaging) token'ı ve bildirim izni durumu.</li>
+    <li><strong>Kullanım/oturum bilgileri:</strong> giriş zamanı, uygulama içi temel etkileşim kayıtları (ör. bir belgenin görüntülenip görüntülenmediği).</li>
+  </ul>
+  <p>Uygulama reklam içermez ve verileriniz reklam amacıyla üçüncü taraflarla paylaşılmaz veya satılmaz.</p>
+
+  <h2>2. Verilerin Kullanım Amacı</h2>
+  <ul>
+    <li>Muhasebeci ile mükellef arasında belge paylaşımını sağlamak,</li>
+    <li>Ödeme vadesi yaklaşan/geçen belgeler için hatırlatma bildirimi göndermek,</li>
+    <li>Hesabınıza güvenli giriş yapmanızı sağlamak,</li>
+    <li>Uygulamanın işleyişini sürdürmek ve hataları tespit etmek.</li>
+  </ul>
+
+  <h2>3. Verilerin Paylaşıldığı Taraflar</h2>
+  <p>Verileriniz, uygulamanın altyapısını sağlayan aşağıdaki hizmet sağlayıcılarda saklanır; pazarlama amacıyla başka bir üçüncü tarafla paylaşılmaz:</p>
+  <ul>
+    <li><strong>Supabase</strong> — kimlik doğrulama, veritabanı ve dosya depolama altyapısı.</li>
+    <li><strong>Google Firebase Cloud Messaging</strong> — yalnızca mobil push bildirimlerinin iletilmesi için.</li>
+  </ul>
+
+  <h2>4. Veri Güvenliği</h2>
+  <p>
+    Belge ve hesap verileriniz, veritabanı seviyesinde satır bazlı erişim
+    politikaları (Row Level Security) ile korunur — bir kullanıcı yalnızca
+    kendi hesabına ait verilere erişebilir. Bağlantılar şifrelenmiş (HTTPS/TLS)
+    kanallar üzerinden yapılır.
+  </p>
+
+  <h2>5. Veri Saklama Süresi</h2>
+  <p>
+    Verileriniz, hesabınız aktif olduğu sürece saklanır. Hesabınızın
+    kapatılmasını talep etmeniz halinde, yasal saklama yükümlülüğü
+    bulunmayan veriler makul bir süre içinde silinir.
+  </p>
+
+  <h2>6. Haklarınız</h2>
+  <p>
+    6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında;
+    verilerinizin işlenip işlenmediğini öğrenme, işlenmişse buna ilişkin
+    bilgi talep etme, düzeltilmesini veya silinmesini isteme haklarına
+    sahipsiniz. Bu talepleriniz için aşağıdaki iletişim adresinden bize
+    ulaşabilirsiniz.
+  </p>
+
+  <h2 id="hesap-silme">7. Hesap ve Verilerin Silinmesi</h2>
+  <p>
+    Hesabınızı ve verilerinizi silmek için uygulama içinde
+    <strong>Ayarlar → Hesap</strong> sekmesine gidip <strong>"Hesabımı Sil"</strong>
+    seçeneğine dokunun ve onaylayın. Bu işlem web sitesi üzerinden değil,
+    yalnızca uygulama içinden yapılabilir; hesap oluşturmak için kayıt
+    gerekmediğinden ayrı bir web formu bulunmamaktadır.
+  </p>
+  <p>
+    Hesabınız silindiğinde adınız anonimleştirilir ve hesabınız devre dışı
+    bırakılır. Muhasebeciniz tarafından yüklenmiş belgeler, muhasebecinin
+    kayıtlarının bütünlüğü ve yasal saklama yükümlülükleri nedeniyle
+    hesabınızdan bağımsız olarak saklanmaya devam edebilir. Diğer kişisel
+    verileriniz (ad, e-posta, bildirim token'ı) makul bir süre içinde
+    silinir.
+  </p>
+
+  <h2>8. Çocukların Gizliliği</h2>
+  <p>
+    Uygulama, muhasebeci-mükellef ilişkisi çerçevesinde iş amaçlı kullanılan
+    bir hizmettir ve çocuklara yönelik değildir.
+  </p>
+
+  <h2>9. Bu Politikadaki Değişiklikler</h2>
+  <p>
+    Bu gizlilik politikası zaman zaman güncellenebilir. Önemli değişiklikler
+    bu sayfada yayınlanır.
+  </p>
+
+  <h2>10. İletişim</h2>
+  <p>
+    Sorularınız için: <a href="mailto:cakalogluer@gmail.com">cakalogluer@gmail.com</a>
+  </p>
+</body>
+</html>
