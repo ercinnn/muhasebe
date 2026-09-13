@@ -363,6 +363,13 @@ allow_dynamic_registration = false
 [functions.on-document-insert]
 verify_jwt = false
 
+# send-whatsapp-document is the same kind of server-to-server webhook,
+# called independently by the same documents-insert pg_net trigger (see
+# supabase/functions/send-whatsapp-document/index.ts) — same reasoning as
+# on-document-insert above.
+[functions.send-whatsapp-document]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
