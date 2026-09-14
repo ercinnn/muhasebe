@@ -340,6 +340,12 @@ gönderildi. Production'a geçiş **Closed testing'e en az 12 gerçek
 kullanıcının 14 gün kesintisiz katılımını** bekliyor (bkz. gotcha'lar),
 henüz tamamlanmadı.
 
+**2026-09-14: Play Store production review sonuçlandı — ONAYLANDI.**
+Google'dan (`no-reply-googleplay-developer@google.com`, 2026-09-12
+17:28 UTC) "Congratulations! Your app has been granted Google Play
+production access" e-postası geldi: Tahakkuk Fişi (`com.tahakkukfisi.app`)
+production erişimi verildi.
+
 **WhatsApp bildirimi**: Kod tamam, gerçek `documents` insert trigger'ıyla
 uçtan uca doğrulandı (WhatsApp + FCM push aynı anda, birbirini
 etkilemeden çalışıyor). `Ayarlar → Mükellef Bilgileri`'nde muhasebeci
